@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-void move_enemy(sf::CircleShape& my, sf::Sprite& enemy) {
+void move_enemy(sf::Sprite& my, sf::Sprite& enemy) {
 
     sf::Vector2f my_coord = my.getPosition();
     sf::Vector2f enemy_coord = enemy.getPosition();
@@ -33,13 +33,16 @@ void move_enemy(sf::CircleShape& my, sf::Sprite& enemy) {
 int main() {
 
     //-------------------------------------------------
-    sf::CircleShape circle(20.0f);
-    circle.setOrigin(circle.getGeometricCenter());
+    //sf::CircleShape circle(20.0f);
+    sf::Texture texture3;
+	texture3.loadFromFile ("pictures/5.png.png");
+    sf::Sprite circle(texture3);
+    // circle.setOrigin(circle.getGeometricCenter());
     float width = 800 / 2, height = 600 / 2;
     circle.setPosition({width, height});
-    circle.setFillColor(sf::Color::Yellow);
-    circle.setOutlineColor(sf::Color::Black);
-    circle.setOutlineThickness(5.f);
+    // circle.setFillColor(sf::Color::Yellow);
+    // circle.setOutlineColor(sf::Color::Black);
+    // circle.setOutlineThickness(5.f);
     //-------------------------------------------------
     sf::Texture texture1;
 	texture1.loadFromFile ("pictures/1.png");
