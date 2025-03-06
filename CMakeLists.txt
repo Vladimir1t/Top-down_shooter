@@ -6,11 +6,13 @@ project(MySFMLApp)
 
 # ---------------------------------------
 # modify if necessary
+#   for Linux:
 # set(SFML_INCLUDE_DIR /usr/local/include) # Path to SFML headers
-# set(SFML_LIBRARY_DIR /usr/local/lib)    # Path to SFML libraries
 # message(STATUS "SFML_DIR: ${SFML_DIR}")
 # message(STATUS "SFML_INCLUDE_DIR: ${SFML_INCLUDE_DIR}")
 # message(STATUS "SFML_LIBRARIES: ${SFML_LIBRARIES}")
+#   for MacOS:
+# include_directories(/opt/homebrew/include)
 # ---------------------------------------
 
 
