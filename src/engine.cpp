@@ -1,13 +1,13 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Network.hpp>
 #include <cmath>
 #include <iostream>
 #include <chrono>
 #include <thread>
 
 void move_enemy(sf::CircleShape& my, sf::Sprite& enemy) {
-
     sf::Vector2f my_coord = my.getPosition();
     sf::Vector2f enemy_coord = enemy.getPosition();
     if (std::fabs(my_coord.x - enemy_coord.x) > 1) {
@@ -31,10 +31,15 @@ void move_enemy(sf::CircleShape& my, sf::Sprite& enemy) {
 }
 
 int main() {
-
     //-------------------------------------------------
+
     sf::CircleShape circle(20.0f);
-    circle.setOrigin(circle.getGeometricCenter());
+    // circle.setOrigin(circle.getLocalBounds().width / 2, circle.getLocalBounds().height / 2);
+
+    // circle.setOrigin(sf::Vector2f(circle.getLocalBounds().size.x/2, circle.getLocalBounds().size.y/2));
+
+    std::cout << circle.getLocalBounds().size.x << circle.getLocalBounds().size.y << std::endl;
+
     float width = 800 / 2, height = 600 / 2;
     circle.setPosition({width, height});
     circle.setFillColor(sf::Color::Yellow);
@@ -59,7 +64,7 @@ int main() {
 
     // run the program as long as the window is open
     while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent()) {
+        while (std::optional<sf::Event> event = window.pollEvent()) {
 
             if (const auto& resized = event->getIf<sf::Event::Resized>()) {
                 std::cout << "new width: " << resized->size.x << std::endl;
