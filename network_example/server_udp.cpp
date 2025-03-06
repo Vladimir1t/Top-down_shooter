@@ -1,34 +1,43 @@
-#include<SFML/Network.hpp>
-#include<iostream>
-#include<string>
+#include <SFML/Network.hpp>
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
-#include<thread>
+#include <iostream>
+#include <string>
+
+#include <thread>
 #include <chrono>
 
 using namespace std;
 using namespace sf;
 
+// udpSocket.send(packet, recipientAddress, recipientPort);
+// udpSocket.receive(packet, senderAddress, senderPort);
+
+
 void Send()
 {
-	std::array<char, 100> data;
-
+	std::string outcoming_message;
 	sf::UdpSocket socket;
-
-	// bind the socket to a port
-	const unsigned short port = 50000; //or sf::Socket::AnyPort
+	// bind the socket to a por
+	const unsigned short send_port = 50001; //or sf::Socket::AnyPort
 	int i = 0;
-	sf::IpAddress recipient(10, 55, 132, 112); //!! your IP required
+	sf::IpAddress recipient(192, 168, 50, 164);
 
-	while (true)
-	{
-		sprintf(data.data(), "iteration: %d", i++);
-		if (socket.send(data.data(), data.size(), recipient, port) != sf::Socket::Status::Done)
-		{
-			std::cout << "error while sending" << std::endl;
+	std::array<char, 1000> incoming_message;
+
+	while(true){
+		std::cin >> outcoming_message;
+		if(outcoming_message.size() != 0){
+			if (socket.send(outcoming_message.data(), outcoming_message.size(), recipient, send_port) != sf::Socket::Status::Done)
+			{
+				std::cout << "error while sending" << std::endl;
+			}
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
+	outcoming_message.clear();
 }
+
 
 
 int main()
