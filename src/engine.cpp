@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Network.hpp>
 #include <cmath>
 #include <iostream>
 #include <chrono>
@@ -31,7 +32,6 @@ void move_enemy(sf::Sprite& my, sf::Sprite& enemy) {
 }
 
 int main() {
-
     //-------------------------------------------------
     //sf::CircleShape circle(20.0f);
     sf::Texture texture3;
@@ -62,7 +62,7 @@ int main() {
 
     // run the program as long as the window is open
     while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent()) {
+        while (std::optional<sf::Event> event = window.pollEvent()) {
 
             if (const auto& resized = event->getIf<sf::Event::Resized>()) {
                 std::cout << "new width: " << resized->size.x << std::endl;
