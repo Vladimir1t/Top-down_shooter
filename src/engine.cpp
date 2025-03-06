@@ -7,8 +7,7 @@
 #include <chrono>
 #include <thread>
 
-void move_enemy(sf::Sprite& my, sf::Sprite& enemy) {
-
+void move_enemy(sf::CircleShape& my, sf::Sprite& enemy) {
     sf::Vector2f my_coord = my.getPosition();
     sf::Vector2f enemy_coord = enemy.getPosition();
     if (std::fabs(my_coord.x - enemy_coord.x) > 1) {
@@ -33,16 +32,17 @@ void move_enemy(sf::Sprite& my, sf::Sprite& enemy) {
 
 int main() {
     //-------------------------------------------------
-    //sf::CircleShape circle(20.0f);
-    sf::Texture texture3;
-	texture3.loadFromFile ("pictures/5.png.png");
-    sf::Sprite circle(texture3);
-    // circle.setOrigin(circle.getGeometricCenter());
+
+    sf::CircleShape circle(20.0f);
+    
+    // circle.setOrigin(circle.getLocalBounds().width / 2, circle.getLocalBounds().height / 2);
+    std::cout << circle.getLocalBounds().size.x << circle.getLocalBounds().size.y << std::endl;
+
     float width = 800 / 2, height = 600 / 2;
     circle.setPosition({width, height});
-    // circle.setFillColor(sf::Color::Yellow);
-    // circle.setOutlineColor(sf::Color::Black);
-    // circle.setOutlineThickness(5.f);
+    circle.setFillColor(sf::Color::Yellow);
+    circle.setOutlineColor(sf::Color::Black);
+    circle.setOutlineThickness(5.f);
     //-------------------------------------------------
     sf::Texture texture1;
 	texture1.loadFromFile ("pictures/1.png");
@@ -52,7 +52,7 @@ int main() {
     //sf::View view(sf::FloatRect({width, height}, {500, 400}));
     //-------------------------------------------------
     sf::Texture texture2;
-	texture2.loadFromFile ("pictures/table.png");
+	texture2.loadFromFile ("pictures/table.png");   
     sf::Sprite s(texture2);
 	s.setPosition ({0, 0});
     //-------------------------------------------------

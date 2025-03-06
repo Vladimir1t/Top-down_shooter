@@ -26,7 +26,8 @@ void Send()
 
     }
 
-    std::string str;
+    std::string incoming;
+    std::string answer;
     sf::Packet message;
 
 	while(true){
@@ -34,9 +35,17 @@ void Send()
             std::cout << "error while recieving" << std::endl;
         }
         else {
-            message >> str;
-            std::cout << str << std::endl;
+            message >> incoming;
+            std::cout << incoming << std::endl;
             message.clear();
+
+            //trying to send answer
+            answer = "was recieved: ";
+            answer.append(incoming);
+            message << answer;
+            if(server.send(message) != sf::Socket::Status::Done) {
+                std::cout << "error while sending answer" << std::endl;
+            }
         }
 	}
 }

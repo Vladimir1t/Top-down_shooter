@@ -26,16 +26,26 @@ void Receive()
     }
 
     sf::Packet message;
-    std::string a;
+    std::string outcoming;
+    std::string incoming;
 
     while (true)
 	{
-        std::cin >> a;
-        message << a;
+        std::cin >> outcoming;
+        message << outcoming;
         if (client.send(message) != sf::Socket::Status::Done) {
 			std::cout << "error while sending to port";
 		}
         message.clear();
+
+        if(client.receive(message) != sf::Socket::Status::Done) {
+            std::cout << "don't have answer. sad(" << std::endl;
+        }
+        else {
+            message >> incoming;
+            std::cout << "got answer: <" << incoming << ">" << std::endl;
+        }
+        
 	}
 }
 
