@@ -1,14 +1,13 @@
-#include<SFML/Network.hpp>
-#include<iostream>
-#include<string>
+#include <SFML/Network.hpp>
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <string>
 
 #include<thread>
 #include <chrono>
 
 void Receive()
 {
-
-
     sf::TcpListener listener;
     // bind the listener to a port
     if (listener.listen(53000) != sf::Socket::Status::Done) {
@@ -45,7 +44,9 @@ void Receive()
             message >> incoming;
             std::cout << "got answer: <" << incoming << ">" << std::endl;
         }
-        
+
+        message.clear();
+        incoming.clear();
 	}
 }
 
