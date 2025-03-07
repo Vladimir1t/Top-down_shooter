@@ -1,3 +1,4 @@
+# вова лох
 # Minimum required version of CMake
 cmake_minimum_required(VERSION 3.10)
 
