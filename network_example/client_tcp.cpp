@@ -15,8 +15,10 @@ void Send()
     sf::TcpSocket      server;
     // sf::IpAddress server_IP(192, 168, 50, 164);
     sf::IpAddress server_IP(0, 0, 0, 0);
+    unsigned short port = 53000;
 
-    sf::Socket::Status status = server.connect(server_IP, 53000);
+    std::cout << "connecting to " << server_IP << " on port " << port << "..." << std::endl;
+    sf::Socket::Status status = server.connect(server_IP, port);
 
     if (status != sf::Socket::Status::Done) {
         std::cout << "error while connecting" << std::endl;
