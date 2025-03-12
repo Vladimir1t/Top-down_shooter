@@ -134,6 +134,7 @@ int main() {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             window.close();
         }
+        
         // Render
         window.clear(sf::Color::Black);
 
