@@ -13,7 +13,7 @@
 
 void Receive() {
     sf::Time timeout = sf::milliseconds(0);
-
+    /* Set port of tcp server*/
     TCP_server server{53000, timeout};
     server.init();
 
@@ -38,9 +38,8 @@ void Receive() {
 	}
 }
 
-
 int main() {
-	std::cout << "bebra started" << std::endl;
+	std::cout << "server started" << std::endl;
 
 	std::thread receive(Receive); 
 	receive.join();
