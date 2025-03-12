@@ -13,7 +13,7 @@
 
 void Receive() {
     sf::Time timeout = sf::milliseconds(0);
-    /* Set port of tcp server*/
+    /* Set port of tcp server */
     TCP_server server{53000, timeout};
     server.init();
 

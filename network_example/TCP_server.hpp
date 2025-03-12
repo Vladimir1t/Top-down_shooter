@@ -8,7 +8,7 @@
 
 #include "game_state.hpp"
 
-class TCP_server{
+class TCP_server {
     
 private:
     sf::TcpListener _listener;
@@ -76,7 +76,7 @@ public:
     void read_packets(game_state& global_state) {
         short vert, horz, rot = 0;
         for (int i = 0; i < _clients.size(); ++i){
-            if (_incoming_messages[i].getDataSize() != 0){
+            if (_incoming_messages[i].getDataSize() != 0) {
                 _incoming_messages[i] >> vert >> horz >> rot;
                 std::cout << i << ": got message: vert: " << vert << " horz: " << horz << " rot: " << rot << std::endl;
                 global_state.player_objects[i].update({vert, horz, rot});
@@ -89,9 +89,9 @@ public:
         unsigned short client_count = _clients.size();
         std::cout << "client count" << client_count << std::endl; 
 
-        for (unsigned short i = 0; i < client_count; ++i){
+        for (unsigned short i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
-            for (unsigned short j = 0; j < client_count; ++j){
+            for (unsigned short j = 0; j < client_count; ++j) {
                 _outcoming_messages[i] << global_state.player_objects[j].getPosition().x
                                        << global_state.player_objects[j].getPosition().y
                                        << global_state.player_objects[j].getRotation().asRadians();
@@ -109,7 +109,7 @@ public:
     }
 
     void clear_outcome() {
-        for (int i = 0; i < _outcoming_messages.size(); ++i){
+        for (int i = 0; i < _outcoming_messages.size(); ++i) {
             _outcoming_messages[i].clear();
         }
     }

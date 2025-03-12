@@ -41,7 +41,7 @@ static void network_handler(control_struct& ctrl_handler, game_state& global_sta
                 global_state.player_objects[i].setRotation(sf::radians(rot));
             }
         }
-        outcoming_data << ctrl_handler.horz << ctrl_handler.vert << ctrl_handler.rotation;
+        outcoming_data << ctrl_handler.vert << ctrl_handler.horz << ctrl_handler.rotation;
         if(server.send(outcoming_data) != sf::Socket::Status::Done) {
             std::cout << "cry about it\n";
         }
@@ -69,16 +69,16 @@ static void render_window(control_struct& ctrl_handler, const game_state& global
                     char key = static_cast<char>(textEntered->unicode);
                     switch (key) {
                         case 'w':
-                            ctrl_handler.horz--;
-                            break;
-                        case 's': 
-                            ctrl_handler.horz++;
-                            break;
-                        case 'a': 
                             ctrl_handler.vert--;
                             break;
-                        case 'd':
+                        case 's': 
                             ctrl_handler.vert++;
+                            break;
+                        case 'a': 
+                            ctrl_handler.horz--;
+                            break;
+                        case 'd':
+                            ctrl_handler.horz++;
                             break;
                         case 'q':
                             ctrl_handler.rotation++;
