@@ -11,7 +11,7 @@
 #include "TCP_server.hpp"
 
 void Receive() {
-    sf::Time timeout = sf::milliseconds(0);
+    sf::Time timeout = sf::milliseconds(30);
     /* Set port of tcp server */
     game::TCP_server server{53000, timeout};
     server.init();

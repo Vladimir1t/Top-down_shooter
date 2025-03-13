@@ -11,6 +11,7 @@
 #include "game_state.hpp"
 
 static std::mutex state_mutex;
+static int index_cli = 0;
 
 static void network_handler(game::control_struct& ctrl_handler, game::game_state& global_state,
     sf::TcpSocket& server, ushort& player_count) {
@@ -45,7 +46,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
         if(server.send(outcoming_data) != sf::Socket::Status::Done) {
             std::cout << "cry about it\n";
         }
-        
         ctrl_handler.horz = ctrl_handler.rotation = ctrl_handler.vert = 0;
         incoming_state.clear();
         outcoming_data.clear();
@@ -53,13 +53,38 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 }
 
 static void render_window(game::control_struct& ctrl_handler, const game::game_state& global_state,
-    ushort& player_count) {
+    ushort& player_count, int index_cli) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
 
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
     char tag_value[100];
+
+    //----------- Map -----------
+    sf::Texture texture_wood1, texture_wood2, texture_stone1;
+	texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
+    texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
+    texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
+
+    sf::Sprite map_1(texture_wood1);
+    sf::Sprite map_2(texture_wood2);
+    sf::Sprite map_3(texture_stone1);
+    sf::Sprite map_4(texture_stone1);
+    sf::Sprite map_5(texture_wood2);
+    sf::Sprite map_6(texture_wood1);
+
+	map_1.setPosition ({0, 0});
+    map_2.setPosition ({490, 0});
+    map_3.setPosition ({980, 0});
+    map_4.setPosition ({0, 490});
+    map_5.setPosition ({490, 490});
+    map_6.setPosition ({980, 490});
+    //---------------------------
+
+    //----------- view -----------
+    sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
+    //----------------------------
 
 	while(window.isOpen()){
         // drawing and handling key buttons
@@ -69,22 +94,22 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                     char key = static_cast<char>(textEntered->unicode);
                     switch (key) {
                         case 'w':
-                            ctrl_handler.vert--;
+                            ctrl_handler.vert -= 5;
                             break;
                         case 's': 
-                            ctrl_handler.vert++;
+                            ctrl_handler.vert += 5;
                             break;
                         case 'a': 
-                            ctrl_handler.horz--;
+                            ctrl_handler.horz -= 5;
                             break;
                         case 'd':
-                            ctrl_handler.horz++;
+                            ctrl_handler.horz += 5;
                             break;
                         case 'q':
-                            ctrl_handler.rotation++;
+                            ctrl_handler.rotation += 5;
                             break;
                         case 'e': 
-                            ctrl_handler.rotation--;
+                            ctrl_handler.rotation -= 5;
                             break;
                         default:
                             break;
@@ -105,6 +130,14 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         // Render
         window.clear(sf::Color::Black);
 
+        /* ---- Map ---- */
+        window.draw(map_1);
+        window.draw(map_2);
+        window.draw(map_3);
+        window.draw(map_4);
+        window.draw(map_5);
+        window.draw(map_6);
+
         for (ushort i = 0; i < player_count; ++i){
             std::lock_guard<std::mutex> lock(state_mutex);
 
@@ -114,13 +147,19 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             tag.setPosition(global_state.player_objects[i].getPosition());
             tag.setRotation(global_state.player_objects[i].getRotation());
             window.draw(tag);
+
+            /* ---- View ---- */
+            if (index_cli == i) {
+                view.setCenter(global_state.player_objects[i].getPosition());
+                window.setView(view);
+            }
             // std::cout << "drawn for player " << i << std::endl;
         }
         window.display();
 	}
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     sf::TcpSocket server;
     /* IP addres of server */
@@ -145,7 +184,7 @@ int main()
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
     /* main thread of rendering module */
-    render_window(ctrl_handler, global_state, player_count);
+    render_window(ctrl_handler, global_state, player_count, std::stoi(argv[1]));
 
     network_thread.join();    
 

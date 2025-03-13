@@ -6,18 +6,18 @@ namespace game {
 
 class control_struct final {
 public:
-    short vert = 0;
-    short horz = 0;
-    short rotation = 0;
+    float vert = 0;
+    float horz = 0;
+    float rotation = 0;
 };
 
 class object: public sf::RectangleShape{
     sf::Vector2f velocity;
 
 public:
-    void update(control_struct ctrl){
-        this->move({velocity.x * ctrl.horz, velocity.y*ctrl.vert});
-        this->rotate(sf::radians(0.01*ctrl.rotation));
+    void update(control_struct ctrl) {
+        move({velocity.x * ctrl.horz, velocity.y*ctrl.vert});
+        rotate(sf::radians(0.01*ctrl.rotation));
     }
 
     void set_velocity(sf::Vector2f new_velocity){
@@ -29,4 +29,15 @@ class game_state final {
 public:
     std::vector<object> player_objects;
 };
+
+class Mob {
+public:
+    size_t index = 0;
+    typename sf::Vector2f coords = {0, 0};
+    Mob(sf::Vector2f coords) : coords(coords) {};
+    Mob() = default;
+
+    // add sprite
+};
+
 }

@@ -38,7 +38,7 @@ public:
     }
 
     void wait_and_handle(game_state& global_state) {
-        if (_selector.wait(_timeout)) { //blocks thread untill any message on any socket appears or time goes out
+        if (_selector.wait(_timeout)) { 
             //handling all connections
             if (_selector.isReady(_listener)){
                 // accept a new connection
@@ -51,7 +51,7 @@ public:
                     std::cerr << "Accepted client on " << client.getRemoteAddress().value() <<
                         " and port " << client.getRemotePort() << std::endl;
                     _selector.add(client);
-                    _clients.push_back(std::move(client)); //safe? safe
+                    _clients.push_back(std::move(client)); 
                     _incoming_messages.emplace_back(); //adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
                     global_state.player_objects.emplace_back();
@@ -75,7 +75,7 @@ public:
     }
 
     void read_packets(game_state& global_state) {
-        short vert, horz, rot = 0;
+        float vert, horz, rot = 0;
         for (int i = 0; i < _clients.size(); ++i){
             if (_incoming_messages[i].getDataSize() != 0) {
                 _incoming_messages[i] >> vert >> horz >> rot;
