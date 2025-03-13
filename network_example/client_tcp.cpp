@@ -116,7 +116,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             window.draw(tag);
             // std::cout << "drawn for player " << i << std::endl;
         }
-        window.draw(s);
         window.display();
 	}
 }
@@ -136,7 +135,7 @@ int main()
     ushort player_count = 0;
 
     if (status != sf::Socket::Status::Done) {
-        std::сerr << "Error while connecting" << std::endl;
+        std::cerr << "Error while connecting" << std::endl;
     }
     else {
         std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
