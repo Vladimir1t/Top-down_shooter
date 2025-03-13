@@ -23,19 +23,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 set( CLIENT_FILES
-    ./network_example/client_tcp.cpp
+    ./network_engine/client_tcp.cpp
 )
 
 set( SERVER_FILES
-    ./network_example/server_tcp.cpp
+    ./network_engine/server_tcp.cpp
 )
 
 # Find SFML library
 find_package(SFML COMPONENTS Graphics Window System Network REQUIRED)
 
 # Add executable
-add_executable(client ./network_example/client_tcp.cpp)
-add_executable(server ./network_example/server_tcp.cpp)
+add_executable(client ./network_engine/client_tcp.cpp)
+add_executable(server ./network_engine/server_tcp.cpp)
 
 add_library(lib_server STATIC ${SERVER_FILES})
 add_library(lib_client STATIC ${CLIENT_FILES})
