@@ -12,7 +12,7 @@
 
 static std::mutex state_mutex;
 
-static void network_handler(control_struct& ctrl_handler, game_state& global_state,
+static void network_handler(game::control_struct& ctrl_handler, game::game_state& global_state,
     sf::TcpSocket& server, ushort& player_count) {
 
     sf::Packet incoming_state;
@@ -20,15 +20,15 @@ static void network_handler(control_struct& ctrl_handler, game_state& global_sta
 
     while (true) {
         if (server.receive(incoming_state) != sf::Socket::Status::Done) {
-            std::cout << "error while recieving" << std::endl;
+            std::cerr << "Error while recieving" << std::endl;
         }
         else {
             float x, y, rot;
             incoming_state >> player_count;
             std::cout << "rn " << player_count << " are playing" << std::endl;
 
-            std::lock_guard<std::mutex> lock(state_mutex);
             //needs better solution, but working rn
+            std::lock_guard<std::mutex> lock(state_mutex);
             global_state.player_objects.clear();
             for (int i = 0; i < player_count; ++i){
                 global_state.player_objects.emplace_back();
@@ -36,7 +36,7 @@ static void network_handler(control_struct& ctrl_handler, game_state& global_sta
 
             for (ushort i = 0; i < player_count; ++i){
                 incoming_state >> x >> y >> rot;
-                std::cout << "player " << i << " " << x << y << rot << std::endl;
+                std::cout << "Player " << i << " " << x << y << rot << std::endl;
                 global_state.player_objects[i].setPosition({x, y});
                 global_state.player_objects[i].setRotation(sf::radians(rot));
             }
@@ -52,7 +52,7 @@ static void network_handler(control_struct& ctrl_handler, game_state& global_sta
     }
 }
 
-static void render_window(control_struct& ctrl_handler, const game_state& global_state,
+static void render_window(game::control_struct& ctrl_handler, const game::game_state& global_state,
     ushort& player_count) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
@@ -62,7 +62,7 @@ static void render_window(control_struct& ctrl_handler, const game_state& global
     char tag_value[100];
 
 	while(window.isOpen()){
-        //drawing and handling key buttons
+        // drawing and handling key buttons
         while (std::optional<sf::Event> event = window.pollEvent()) {
             if (const auto* textEntered = event->getIf<sf::Event::TextEntered>()) {
                 if (textEntered->unicode < 128) {
@@ -105,18 +105,18 @@ static void render_window(control_struct& ctrl_handler, const game_state& global
         // Render
         window.clear(sf::Color::Black);
 
-        std::lock_guard<std::mutex> lock(state_mutex);
-
         for (ushort i = 0; i < player_count; ++i){
-            window.draw(global_state.player_objects[i]);
+            std::lock_guard<std::mutex> lock(state_mutex);
 
+            window.draw(global_state.player_objects[i]);
             sprintf(tag_value, "%d", i);
             sf::Text tag(font, tag_value);
             tag.setPosition(global_state.player_objects[i].getPosition());
             tag.setRotation(global_state.player_objects[i].getRotation());
             window.draw(tag);
-            std::cout << "drawn for player " << i << std::endl;
+            // std::cout << "drawn for player " << i << std::endl;
         }
+        window.draw(s);
         window.display();
 	}
 }
@@ -131,15 +131,15 @@ int main()
     std::cout << "connecting to " << server_IP << " on port " << port << "..." << std::endl;
     sf::Socket::Status status = server.connect(server_IP, port);
 
-    game_state global_state;
-    control_struct ctrl_handler;
+    game::game_state global_state;
+    game::control_struct ctrl_handler;
     ushort player_count = 0;
 
     if (status != sf::Socket::Status::Done) {
-        std::cout << "error while connecting" << std::endl;
+        std::сerr << "Error while connecting" << std::endl;
     }
     else {
-        std::cout << "conntcted to server on " << server.getRemoteAddress().value() <<
+        std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
             " and port " << server.getRemotePort() << std::endl;
     }
     /* thread of network module */

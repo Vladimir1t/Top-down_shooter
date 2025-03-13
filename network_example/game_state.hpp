@@ -2,7 +2,10 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
-struct control_struct {
+namespace game {
+
+class control_struct final {
+public:
     short vert = 0;
     short horz = 0;
     short rotation = 0;
@@ -11,7 +14,7 @@ struct control_struct {
 class object: public sf::RectangleShape{
     sf::Vector2f velocity;
 
-    public:
+public:
     void update(control_struct ctrl){
         this->move({velocity.x * ctrl.horz, velocity.y*ctrl.vert});
         this->rotate(sf::radians(0.01*ctrl.rotation));
@@ -22,7 +25,8 @@ class object: public sf::RectangleShape{
     }
 };
 
-class game_state{
-    public:
+class game_state final {
+public:
     std::vector<object> player_objects;
 };
+}

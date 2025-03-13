@@ -5,19 +5,18 @@
 
 #include <iostream>
 #include <string>
-
 #include <thread>
 #include <chrono>
 
 #include "TCP_server.hpp"
 
 void Receive() {
-    sf::Time timeout = sf::milliseconds(0);
+    sf::Time timeout = sf::milliseconds(30);
     /* Set port of tcp server */
-    TCP_server server{53000, timeout};
+    game::TCP_server server{53000, timeout};
     server.init();
 
-    game_state global_state;
+    game::game_state global_state;
 
     while (true) {
         server.wait_and_handle(global_state);
@@ -34,12 +33,11 @@ void Receive() {
 
         server.clear_outcome();
         std::cout << "outcome cleared" << std::endl;
-
 	}
 }
 
 int main() {
-	std::cout << "server started" << std::endl;
+	std::cout << "Server started" << std::endl;
 
 	std::thread receive(Receive); 
 	receive.join();

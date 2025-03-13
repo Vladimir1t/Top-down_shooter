@@ -8,27 +8,28 @@
 
 #include "game_state.hpp"
 
-class TCP_server {
+namespace game {
+
+class TCP_server final {
     
 private:
     sf::TcpListener _listener;
     sf::SocketSelector _selector;
 
-
     std::vector<sf::TcpSocket> _clients;
     std::vector<sf::Packet> _incoming_messages;
     std::vector<sf::Packet> _outcoming_messages;
 
-    unsigned short _port;
+    ushort _port;
     sf::Time _timeout;
 
 public:
     //port number and timeout in milliseconds (0 for infinity)
-    TCP_server(unsigned short port, sf::Time timeout): _port(port), _timeout(timeout) {}; 
+    TCP_server(ushort port, sf::Time timeout): _port(port), _timeout(timeout) {}; 
     
     void init() {
         if (_listener.listen(_port) != sf::Socket::Status::Done) {
-            std::cout << "error while starting listening to connections" << std::endl;
+            std::cerr << "Error while starting listening to connections" << std::endl;
             return;
         }
 
@@ -37,20 +38,20 @@ public:
     }
 
     void wait_and_handle(game_state& global_state) {
-        if (_selector.wait(_timeout)){ //blocks thread untill any message on any socket appears or time goes out
+        if (_selector.wait(_timeout)) { //blocks thread untill any message on any socket appears or time goes out
             //handling all connections
             if (_selector.isReady(_listener)){
                 // accept a new connection
                 sf::TcpSocket client;
                 if (_listener.accept(client) != sf::Socket::Status::Done) { //must not block thread.
-                    std::cout << "error while accepting client's socket" << std::endl;
+                    std::cerr << "Error while accepting client's socket" << std::endl;
                     return;
                 }
                 else {
-                    std::cout << "accepted client on " << client.getRemoteAddress().value() <<
+                    std::cerr << "Accepted client on " << client.getRemoteAddress().value() <<
                         " and port " << client.getRemotePort() << std::endl;
                     _selector.add(client);
-                    _clients.push_back(std::move(client)); //safe?
+                    _clients.push_back(std::move(client)); //safe? safe
                     _incoming_messages.emplace_back(); //adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
                     global_state.player_objects.emplace_back();
@@ -69,7 +70,7 @@ public:
             }
         }
         else {
-            std::cout << "await timeout happend. Do something with this information, or don't" << std::endl; 
+            std::cerr << "await timeout happend. Do something with this information, or don't" << std::endl; 
         }
     }
 
@@ -78,7 +79,8 @@ public:
         for (int i = 0; i < _clients.size(); ++i){
             if (_incoming_messages[i].getDataSize() != 0) {
                 _incoming_messages[i] >> vert >> horz >> rot;
-                std::cout << i << ": got message: vert: " << vert << " horz: " << horz << " rot: " << rot << std::endl;
+                std::cout << i << ": got message: vert: " << vert << " horz: "
+                    << horz << " rot: " << rot << std::endl;
                 global_state.player_objects[i].update({vert, horz, rot});
                 _incoming_messages[i].clear();
             }
@@ -86,12 +88,12 @@ public:
     }
 
     void create_messages(game_state& global_state) {
-        unsigned short client_count = _clients.size();
+        ushort client_count = _clients.size();
         std::cout << "client count" << client_count << std::endl; 
 
-        for (unsigned short i = 0; i < client_count; ++i) {
+        for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
-            for (unsigned short j = 0; j < client_count; ++j) {
+            for (int j = 0; j < client_count; ++j) {
                 _outcoming_messages[i] << global_state.player_objects[j].getPosition().x
                                        << global_state.player_objects[j].getPosition().y
                                        << global_state.player_objects[j].getRotation().asRadians();
@@ -102,7 +104,7 @@ public:
     void send_packets() {
         for (int i = 0; i < _clients.size(); ++i){
             if (_clients[i].send(_outcoming_messages[i]) != sf::Socket::Status::Done) {
-                std::cout << "error while sending to " << _clients[i].getRemoteAddress().value() 
+                std::cerr << "Error while sending to " << _clients[i].getRemoteAddress().value() 
                                 << " " << _clients[i].getLocalPort() << std::endl;
             }
         }
@@ -114,3 +116,4 @@ public:
         }
     }
 };
+}
