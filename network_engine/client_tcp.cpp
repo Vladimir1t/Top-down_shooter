@@ -161,6 +161,10 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
 int main(int argc, char* argv[])
 {
+    if (argc != 2) {
+        std::cerr << "You should write the index of client [from 0 to N]";
+        return -1;
+    }
     sf::TcpSocket server;
     /* IP addres of server */
     sf::IpAddress server_IP(127, 0, 0, 1);
