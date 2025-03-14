@@ -37,16 +37,16 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 
             for (ushort i = 0; i < player_count; ++i){
                 incoming_state >> x >> y >> rot;
-                std::cout << "Player " << i << " " << x << y << rot << std::endl;
+                std::cout << "Player " << i << ' ' << x << ' ' << y << ' ' << rot << std::endl;
                 global_state.player_objects[i].setPosition({x, y});
                 global_state.player_objects[i].setRotation(sf::radians(rot));
             }
         }
-        outcoming_data << ctrl_handler.vert << ctrl_handler.horz << ctrl_handler.rotation;
+        outcoming_data << ctrl_handler.move << ctrl_handler.time;
         if(server.send(outcoming_data) != sf::Socket::Status::Done) {
             std::cout << "cry about it\n";
         }
-        ctrl_handler.horz = ctrl_handler.rotation = ctrl_handler.vert = 0;
+        //ctrl_handler.move = 0;
         incoming_state.clear();
         outcoming_data.clear();
     }
@@ -86,32 +86,38 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
     //----------------------------
 
-	while(window.isOpen()){
+    sf::Clock clock;
+
+	while (window.isOpen()) {
         // drawing and handling key buttons
+        sf::Time time_scince_last_frame = clock.restart();
+        ctrl_handler.time = time_scince_last_frame.asSeconds();
+
         while (std::optional<sf::Event> event = window.pollEvent()) {
             if (const auto* textEntered = event->getIf<sf::Event::TextEntered>()) {
                 if (textEntered->unicode < 128) {
                     char key = static_cast<char>(textEntered->unicode);
                     switch (key) {
                         case 'w':
-                            ctrl_handler.vert -= 5;
+                            ctrl_handler.move = 1;
                             break;
                         case 's': 
-                            ctrl_handler.vert += 5;
+                            ctrl_handler.move = 2;
                             break;
                         case 'a': 
-                            ctrl_handler.horz -= 5;
+                            ctrl_handler.move = 3;
                             break;
                         case 'd':
-                            ctrl_handler.horz += 5;
+                            ctrl_handler.move = 4;
                             break;
                         case 'q':
-                            ctrl_handler.rotation += 5;
+                            ctrl_handler.move = 5;
                             break;
                         case 'e': 
-                            ctrl_handler.rotation -= 5;
+                            ctrl_handler.move = 6;
                             break;
                         default:
+                            ctrl_handler.move = 0;
                             break;
                     }
                 }

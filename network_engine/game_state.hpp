@@ -6,18 +6,18 @@ namespace game {
 
 class control_struct final {
 public:
-    float vert = 0;
-    float horz = 0;
-    float rotation = 0;
+    int move;
+    float time;
 };
 
 class object: public sf::RectangleShape{
     sf::Vector2f velocity;
 
 public:
-    void update(control_struct ctrl) {
-        move({velocity.x * ctrl.horz, velocity.y*ctrl.vert});
-        rotate(sf::radians(0.01*ctrl.rotation));
+    void update(float horz, float vert, float rot) {
+        //std::cout << velocity.x << ' ' << velocity.y << '\n'; 
+        move({velocity.x * horz, velocity.y * vert});
+        rotate(sf::radians(0.01 * rot));
     }
 
     void set_velocity(sf::Vector2f new_velocity){

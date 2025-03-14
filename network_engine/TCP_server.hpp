@@ -75,13 +75,44 @@ public:
     }
 
     void read_packets(game_state& global_state) {
-        float vert, horz, rot = 0;
+        int move;
+        float time, speed;
         for (int i = 0; i < _clients.size(); ++i){
             if (_incoming_messages[i].getDataSize() != 0) {
-                _incoming_messages[i] >> vert >> horz >> rot;
-                std::cout << i << ": got message: vert: " << vert << " horz: "
-                    << horz << " rot: " << rot << std::endl;
-                global_state.player_objects[i].update({vert, horz, rot});
+                _incoming_messages[i] >> move >> time;
+                speed = time / 6;
+                std::cout << time << ' ' << move << '\n';
+                switch (move) {
+                    case 1:
+                        //std::cout << "w\n";
+                        global_state.player_objects[i].update(0, -speed, 0);
+                        break;
+                    case 2:
+                        //std::cout << "s\n";
+                        global_state.player_objects[i].update(0, speed, 0);
+                        break;
+                    case 3:
+                        //std::cout << "a\n"; 
+                        global_state.player_objects[i].update(-speed, 0, 0);
+                        break;
+                    case 4:
+                        //std::cout << "d\n";
+                        global_state.player_objects[i].update(speed, 0, 0);
+                        break;
+                    case 5:
+                        global_state.player_objects[i].update(0, 0, -speed);
+                        break;
+                    case 6:
+                        global_state.player_objects[i].update(0, 0, speed);
+                        break;
+                    default:
+                        /* stop buttom */
+                        break;
+                }
+                // >> vert >> horz >> rot;
+                // std::cout << i << ": got message: vert: " << vert << " horz: "
+                //     << horz << " rot: " << rot << std::endl;
+                //global_state.player_objects[i].update({vert, horz, rot});
                 _incoming_messages[i].clear();
             }
         }
@@ -105,7 +136,7 @@ public:
         for (int i = 0; i < _clients.size(); ++i){
             if (_clients[i].send(_outcoming_messages[i]) != sf::Socket::Status::Done) {
                 std::cerr << "Error while sending to " << _clients[i].getRemoteAddress().value() 
-                                << " " << _clients[i].getLocalPort() << std::endl;
+                    << " " << _clients[i].getLocalPort() << std::endl;
             }
         }
     }
