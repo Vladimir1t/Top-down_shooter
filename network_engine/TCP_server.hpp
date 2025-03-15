@@ -3,6 +3,7 @@
 #include <SFML/Window.hpp>
 #include <iostream>
 #include <string>
+#include <list>
 
 #pragma once
 
@@ -16,7 +17,7 @@ private:
     sf::TcpListener _listener;
     sf::SocketSelector _selector;
 
-    std::vector<sf::TcpSocket> _clients;
+    std::list<sf::TcpSocket> _clients;
     std::vector<sf::Packet> _incoming_messages;
     std::vector<sf::Packet> _outcoming_messages;
 
@@ -43,13 +44,14 @@ public:
             if (_selector.isReady(_listener)){
                 // accept a new connection
                 sf::TcpSocket client;
+                //_clients.push_back(sf::TcpSocket()); 
                 if (_listener.accept(client) != sf::Socket::Status::Done) { //must not block thread.
                     std::cerr << "Error while accepting client's socket" << std::endl;
                     return;
                 }
                 else {
-                    std::cerr << "Accepted client on " << client.getRemoteAddress().value() <<
-                        " and port " << client.getRemotePort() << std::endl;
+                    std::cerr << "Accepted client on " << (client).getRemoteAddress().value() <<
+                        " and port " << (client).getRemotePort() << std::endl;
                     _selector.add(client);
                     _clients.push_back(std::move(client)); 
                     _incoming_messages.emplace_back(); //adding new message packet to same index as created client
@@ -59,12 +61,12 @@ public:
                     global_state.player_objects.back().set_velocity({1.0, 1.0});
                 }
             }
-
-            for (int i = 0; i < _clients.size(); ++i) {
-                if (_selector.isReady(_clients[i])){
-                    if (_clients[i].receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
+            int i = 0;
+            for (auto& client: _clients) {
+                if (_selector.isReady(client)){
+                    if (client.receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
                         std::cout << "recieving error (maybe socket not connected)" << std::endl;
-                        _incoming_messages[i].clear();
+                        _incoming_messages[i++].clear();
                     }
                 }
             }
@@ -120,7 +122,7 @@ public:
 
     void create_messages(game_state& global_state) {
         ushort client_count = _clients.size();
-        std::cout << "client count" << client_count << std::endl; 
+        std::cout << "client count " << client_count << std::endl; 
 
         for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
@@ -133,10 +135,17 @@ public:
     }
 
     void send_packets() {
-        for (int i = 0; i < _clients.size(); ++i){
-            if (_clients[i].send(_outcoming_messages[i]) != sf::Socket::Status::Done) {
-                std::cerr << "Error while sending to " << _clients[i].getRemoteAddress().value() 
-                    << " " << _clients[i].getLocalPort() << std::endl;
+        int i = 0;
+        for (auto&& it_client = _clients.begin(); it_client != _clients.end(); ++it_client) {
+            try {
+                if (it_client->send(_outcoming_messages[i++]) != sf::Socket::Status::Done) {
+                    std::cerr << "Error while sending to " << it_client->getRemoteAddress().value() 
+                        << " " << it_client->getLocalPort() << std::endl;
+                }
+            }
+            catch (std::bad_optional_access& e) {
+                // _clients.erase(it_client);
+                // break;
             }
         }
     }
