@@ -85,11 +85,25 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     map_6.setPosition ({980, 490});
     //---------------------------
 
+    //----------- Hero -----------
+    sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
+	texture_hero_down.loadFromFile ("Animations/idle_Base/idle_Down-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_up.loadFromFile ("Animations/idle_Base/idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_right.loadFromFile ("Animations/idle_Base/idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_left.loadFromFile ("Animations/idle_Base/idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+
+    sf::Sprite hero_down(texture_hero_down);
+    sf::Sprite hero_up(texture_hero_up);
+    sf::Sprite hero_right(texture_hero_right);
+    sf::Sprite hero_left(texture_hero_left);
+
+    sf::Sprite current_state_hero = std::move(hero_down);
+    current_state_hero.setPosition({1, 1});
+    //----------------------------
+
     //----------- view -----------
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
     //----------------------------
-
-    sf::Clock clock;
 
     int move_x_old = 0;
     int move_y_old = 0;
@@ -105,16 +119,20 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
                         if(move_x < 1) move_x++;
+                        current_state_hero = std::move(hero_right);
                         break;
                     case sf::Keyboard::Key::A: 
                         if(move_x > -1) move_x--;
+                        current_state_hero = std::move(hero_left);
                         break;
                     
                     case sf::Keyboard::Key::W: 
                         if(move_y > -1) move_y--;
+                        current_state_hero = std::move(hero_up);
                         break;
                     case sf::Keyboard::Key::S: 
                         if(move_y < 1) move_y++;
+                        current_state_hero = std::move(hero_down);
                         break;
             
                     default:
@@ -124,17 +142,25 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
-                        if(move_x > -1) move_x--;
+                        if (move_x > -1) 
+                            move_x--;
+                        current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::A: 
-                        if(move_x < 1) move_x++;
+                        if (move_x < 1) 
+                            move_x++;
+                        current_state_hero = std::move(hero_down);
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        if(move_y < 1) move_y++;
+                        if (move_y < 1)
+                            move_y++;
+                        current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y > -1) move_y--;
+                        if(move_y > -1) 
+                            move_y--;
+                        current_state_hero = std::move(hero_down);
                         break;
             
                     default:
@@ -153,17 +179,16 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             }
         }
 
-        if(move_x_old != move_x){
+        if (move_x_old != move_x) {
             move_x_old = move_x;
             ctrl_handler.move_horz = move_x;
             ctrl_handler.changed = 1;
         }
-        if(move_y_old != move_y){
+        if (move_y_old != move_y) {
             move_y_old = move_y;
             ctrl_handler.move_vert = move_y;
             ctrl_handler.changed = 1;
         }
-
 
         // Render
         window.clear(sf::Color::Black);
@@ -180,11 +205,11 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             std::lock_guard<std::mutex> lock(state_mutex);
 
             window.draw(global_state.player_objects[i]);
-            sprintf(tag_value, "%d", i);
-            sf::Text tag(font, tag_value);
-            tag.setPosition(global_state.player_objects[i].getPosition());
-            tag.setRotation(global_state.player_objects[i].getRotation());
-            window.draw(tag);
+            //sprintf(tag_value, "%d", i);
+            //sf::Text tag(font, tag_value);
+            current_state_hero.setPosition(global_state.player_objects[i].getPosition());
+            current_state_hero.setRotation(global_state.player_objects[i].getRotation());
+            window.draw(current_state_hero);
 
             /* ---- View ---- */
             if (index_cli == i) {
