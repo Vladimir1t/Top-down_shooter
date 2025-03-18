@@ -205,7 +205,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 int main(int argc, char* argv[])
 {
     if (argc != 2) {
-        std::cerr << "You should write the index of client [from 0 to N]";
+        std::cerr << "You should write the index of client [from 0 to N]\n";
         return -1;
     }
     sf::TcpSocket server;
