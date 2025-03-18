@@ -66,9 +66,10 @@ public:
                 if (_selector.isReady(client)){
                     if (client.receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
                         std::cout << "recieving error (maybe socket not connected)" << std::endl;
-                        _incoming_messages[i++].clear();
+                        _incoming_messages[i].clear();
                     }
                 }
+                ++i;
             }
         }
         else {
