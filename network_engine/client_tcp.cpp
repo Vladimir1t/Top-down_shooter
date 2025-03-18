@@ -149,7 +149,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                        if (clock.getElapsedTime().asSeconds() > 0.2) {
                             change_position_sprite(clock, current_state_hero, hero_right,
                                 hero_right2, status_sprite);
                         }
@@ -157,7 +157,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         break;
 
                     case sf::Keyboard::Key::A: 
-                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                        if (clock.getElapsedTime().asSeconds() > 0.2) {
                             change_position_sprite(clock, current_state_hero, hero_left,
                                 hero_left2, status_sprite);
                         }
@@ -165,7 +165,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         break;
 
                     case sf::Keyboard::Key::W: 
-                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                        if (clock.getElapsedTime().asSeconds() > 0.2) {
                             change_position_sprite(clock, current_state_hero, hero_up,
                                 hero_up2, status_sprite);
                         }
@@ -173,7 +173,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         break;
 
                     case sf::Keyboard::Key::S: 
-                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                        if (clock.getElapsedTime().asSeconds() > 0.2) {
                             change_position_sprite(clock, current_state_hero, hero_down,
                                 hero_down2, status_sprite);
                         }
