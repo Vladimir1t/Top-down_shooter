@@ -87,10 +87,10 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Hero -----------
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
-	texture_hero_down.loadFromFile ("Animations/idle_Base/idle_Down-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_up.loadFromFile ("Animations/idle_Base/idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_right.loadFromFile ("Animations/idle_Base/idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_left.loadFromFile ("Animations/idle_Base/idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+	texture_hero_down.loadFromFile ("Animations/Idle_Base/Idle_Down-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_up.loadFromFile ("Animations/Idle_Base/Idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_right.loadFromFile ("Animations/Idle_Base/Idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_left.loadFromFile ("Animations/Idle_Base/Idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
 
     sf::Sprite hero_down(texture_hero_down);
     sf::Sprite hero_up(texture_hero_up);
@@ -118,20 +118,23 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        if(move_x < 1) move_x++;
+                        if(move_x < 1) 
+                            move_x++;
                         current_state_hero = std::move(hero_right);
                         break;
                     case sf::Keyboard::Key::A: 
-                        if(move_x > -1) move_x--;
+                        if(move_x > -1) 
+                            move_x--;
                         current_state_hero = std::move(hero_left);
                         break;
-                    
                     case sf::Keyboard::Key::W: 
-                        if(move_y > -1) move_y--;
+                        if(move_y > -1) 
+                            move_y--;
                         current_state_hero = std::move(hero_up);
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y < 1) move_y++;
+                        if(move_y < 1) 
+                            move_y++;
                         current_state_hero = std::move(hero_down);
                         break;
             
