@@ -6,8 +6,8 @@ namespace game {
 
 class control_struct final {
 public:
-    int move_horz;
-    int move_vert;
+    int move_x;
+    int move_y;
     int rotate;
     bool changed;
 };

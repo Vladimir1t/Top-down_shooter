@@ -43,14 +43,13 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             }
         }
         if(ctrl_handler.changed){
-            outcoming_data << ctrl_handler.move_horz << ctrl_handler.move_vert << ctrl_handler.rotate;
+            outcoming_data << ctrl_handler.move_x << ctrl_handler.move_y << ctrl_handler.rotate;
             ctrl_handler.changed = 0;
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "cry about it\n";
             }
         }
         
-        //ctrl_handler.move = 0;
         incoming_state.clear();
         outcoming_data.clear();
     }
@@ -89,13 +88,16 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
     //----------------------------
 
-    sf::Clock clock;
-
     int move_x_old = 0;
     int move_y_old = 0;
 
     int move_x = 0;
     int move_y = 0;
+
+    int move_x_plus = 0;
+    int move_x_minus = 0;
+    int move_y_plus = 0;
+    int move_y_minus = 0;
 
 	while (window.isOpen()) {
         // drawing and handling key buttons
@@ -104,17 +106,17 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        if(move_x < 1) move_x++;
+                        move_x_plus = 1;
                         break;
                     case sf::Keyboard::Key::A: 
-                        if(move_x > -1) move_x--;
+                        move_x_minus = 1;
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        if(move_y > -1) move_y--;
+                        move_y_minus = 1;
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y < 1) move_y++;
+                        move_y_plus = 1;
                         break;
             
                     default:
@@ -124,17 +126,17 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
-                        if(move_x > -1) move_x--;
+                        move_x_plus = 0;
                         break;
                     case sf::Keyboard::Key::A: 
-                        if(move_x < 1) move_x++;
+                        move_x_minus = 0;
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        if(move_y < 1) move_y++;
+                        move_y_minus = 0;
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y > -1) move_y--;
+                        move_y_plus = 0;
                         break;
             
                     default:
@@ -153,14 +155,17 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             }
         }
 
+        move_x = move_x_plus - move_x_minus;
+        move_y = move_y_plus - move_y_minus;
+
         if(move_x_old != move_x){
             move_x_old = move_x;
-            ctrl_handler.move_horz = move_x;
+            ctrl_handler.move_x = move_x;
             ctrl_handler.changed = 1;
         }
         if(move_y_old != move_y){
             move_y_old = move_y;
-            ctrl_handler.move_vert = move_y;
+            ctrl_handler.move_y = move_y;
             ctrl_handler.changed = 1;
         }
 

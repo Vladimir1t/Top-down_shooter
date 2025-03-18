@@ -28,14 +28,15 @@ public:
     //port number and timeout in milliseconds (0 for infinity)
     TCP_server(ushort port, sf::Time timeout): _port(port), _timeout(timeout) {}; 
     
-    void init() {
+    int init() {
         if (_listener.listen(_port) != sf::Socket::Status::Done) {
             std::cerr << "Error while starting listening to connections" << std::endl;
-            return;
+            return -1;
         }
 
         // bind the listener to a port
         _selector.add(_listener);
+        return 0;
     }
 
     void wait_and_handle(game_state& global_state) {
@@ -79,14 +80,14 @@ public:
 
     void read_packets(game_state& global_state) {
 
-        int move_horz, move_vert, rotate;
+        int move_x, move_y, rotate;
         for (int i = 0; i < _clients.size(); ++i){
             if (_incoming_messages[i].getDataSize() != 0) {
-                _incoming_messages[i] >> move_horz >> move_vert >> rotate;
+                _incoming_messages[i] >> move_x >> move_y >> rotate;
                 
-                std::cout << i << ": got message: vert: " << move_vert << " horz: "
-                    << move_horz << " rot: " << rotate << std::endl;
-                global_state.player_objects[i].set_velocity_and_rot({move_horz, move_vert}, rotate);
+                std::cout << i << ": got message: vert: " << move_y << " horz: "
+                    << move_x << " rot: " << rotate << std::endl;
+                global_state.player_objects[i].set_velocity_and_rot({move_x, move_y}, rotate);
                 _incoming_messages[i].clear();
             }
         }
