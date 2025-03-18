@@ -74,7 +74,7 @@ public:
             }
         }
         else {
-            // std::cerr << "await timeout happend. Do something with this information, or don't" << std::endl; 
+            // std::cerr << "await timeout happend. Do something with this information or don't" << std::endl; 
         }
     }
 
@@ -123,8 +123,9 @@ public:
                 }
             }
             catch (std::bad_optional_access& e) {
-                // _clients.erase(it_client);
-                // break;
+                _clients.clear();
+                init();
+                break;
             }
         }
     }

@@ -65,7 +65,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Map -----------
     sf::Texture texture_wood1, texture_wood2, texture_stone1;
-	texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
+	  texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
 
@@ -76,13 +76,29 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::Sprite map_5(texture_wood2);
     sf::Sprite map_6(texture_wood1);
 
-	map_1.setPosition ({0, 0});
+	  map_1.setPosition ({0, 0});
     map_2.setPosition ({490, 0});
     map_3.setPosition ({980, 0});
     map_4.setPosition ({0, 490});
     map_5.setPosition ({490, 490});
     map_6.setPosition ({980, 490});
     //---------------------------
+
+    //----------- Hero -----------
+    sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
+	  texture_hero_down.loadFromFile ("Animations/idle_Base/idle_Down-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_up.loadFromFile ("Animations/idle_Base/idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_right.loadFromFile ("Animations/idle_Base/idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    texture_hero_left.loadFromFile ("Animations/idle_Base/idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+
+    sf::Sprite hero_down(texture_hero_down);
+    sf::Sprite hero_up(texture_hero_up);
+    sf::Sprite hero_right(texture_hero_right);
+    sf::Sprite hero_left(texture_hero_left);
+
+    sf::Sprite current_state_hero = std::move(hero_down);
+    current_state_hero.setPosition({1, 1});
+    //----------------------------
 
     //----------- view -----------
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
@@ -106,17 +122,21 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        move_x_plus = 1;
+                        if(move_x < 1) move_x++;
+                        current_state_hero = std::move(hero_right);
                         break;
                     case sf::Keyboard::Key::A: 
-                        move_x_minus = 1;
+                        if(move_x > -1) move_x--;
+                        current_state_hero = std::move(hero_left);
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        move_y_minus = 1;
+                        if(move_y > -1) move_y--;
+                        current_state_hero = std::move(hero_up);
                         break;
                     case sf::Keyboard::Key::S: 
-                        move_y_plus = 1;
+                        if(move_y < 1) move_y++;
+                        current_state_hero = std::move(hero_down);
                         break;
             
                     default:
@@ -126,17 +146,25 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
-                        move_x_plus = 0;
+                        if (move_x > -1) 
+                            move_x--;
+                        current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::A: 
-                        move_x_minus = 0;
+                        if (move_x < 1) 
+                            move_x++;
+                        current_state_hero = std::move(hero_down);
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        move_y_minus = 0;
+                        if (move_y < 1)
+                            move_y++;
+                        current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::S: 
-                        move_y_plus = 0;
+                        if(move_y > -1) 
+                            move_y--;
+                        current_state_hero = std::move(hero_down);
                         break;
             
                     default:
@@ -158,17 +186,16 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         move_x = move_x_plus - move_x_minus;
         move_y = move_y_plus - move_y_minus;
 
-        if(move_x_old != move_x){
+        if (move_x_old != move_x){
             move_x_old = move_x;
             ctrl_handler.move_x = move_x;
             ctrl_handler.changed = 1;
         }
-        if(move_y_old != move_y){
+        if (move_y_old != move_y) {
             move_y_old = move_y;
             ctrl_handler.move_y = move_y;
             ctrl_handler.changed = 1;
         }
-
 
         // Render
         window.clear(sf::Color::Black);
@@ -185,11 +212,9 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             std::lock_guard<std::mutex> lock(state_mutex);
 
             window.draw(global_state.player_objects[i]);
-            sprintf(tag_value, "%d", i);
-            sf::Text tag(font, tag_value);
-            tag.setPosition(global_state.player_objects[i].getPosition());
-            tag.setRotation(global_state.player_objects[i].getRotation());
-            window.draw(tag);
+            current_state_hero.setPosition(global_state.player_objects[i].getPosition());
+            current_state_hero.setRotation(global_state.player_objects[i].getRotation());
+            window.draw(current_state_hero);
 
             /* ---- View ---- */
             if (index_cli == i) {
