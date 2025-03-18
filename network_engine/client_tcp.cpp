@@ -43,14 +43,13 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             }
         }
         if(ctrl_handler.changed){
-            outcoming_data << ctrl_handler.move_horz << ctrl_handler.move_vert << ctrl_handler.rotate;
+            outcoming_data << ctrl_handler.move_x << ctrl_handler.move_y << ctrl_handler.rotate;
             ctrl_handler.changed = 0;
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "cry about it\n";
             }
         }
         
-        //ctrl_handler.move = 0;
         incoming_state.clear();
         outcoming_data.clear();
     }
@@ -66,7 +65,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Map -----------
     sf::Texture texture_wood1, texture_wood2, texture_stone1;
-	texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
+	  texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
 
@@ -77,7 +76,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::Sprite map_5(texture_wood2);
     sf::Sprite map_6(texture_wood1);
 
-	map_1.setPosition ({0, 0});
+	  map_1.setPosition ({0, 0});
     map_2.setPosition ({490, 0});
     map_3.setPosition ({980, 0});
     map_4.setPosition ({0, 490});
@@ -91,7 +90,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     texture_hero_up.loadFromFile ("Animations/Idle_Base/Idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
     texture_hero_right.loadFromFile ("Animations/Idle_Base/Idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
     texture_hero_left.loadFromFile ("Animations/Idle_Base/Idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-
     sf::Sprite hero_down(texture_hero_down);
     sf::Sprite hero_up(texture_hero_up);
     sf::Sprite hero_right(texture_hero_right);
@@ -110,6 +108,11 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     int move_x = 0;
     int move_y = 0;
+
+    int move_x_plus = 0;
+    int move_x_minus = 0;
+    int move_y_plus = 0;
+    int move_y_minus = 0;
 
 	while (window.isOpen()) {
         // drawing and handling key buttons
@@ -182,14 +185,17 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             }
         }
 
-        if (move_x_old != move_x) {
+        move_x = move_x_plus - move_x_minus;
+        move_y = move_y_plus - move_y_minus;
+
+        if (move_x_old != move_x){
             move_x_old = move_x;
-            ctrl_handler.move_horz = move_x;
+            ctrl_handler.move_x = move_x;
             ctrl_handler.changed = 1;
         }
         if (move_y_old != move_y) {
             move_y_old = move_y;
-            ctrl_handler.move_vert = move_y;
+            ctrl_handler.move_y = move_y;
             ctrl_handler.changed = 1;
         }
 
@@ -208,8 +214,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             std::lock_guard<std::mutex> lock(state_mutex);
 
             window.draw(global_state.player_objects[i]);
-            //sprintf(tag_value, "%d", i);
-            //sf::Text tag(font, tag_value);
             current_state_hero.setPosition(global_state.player_objects[i].getPosition());
             current_state_hero.setRotation(global_state.player_objects[i].getRotation());
             window.draw(current_state_hero);
@@ -228,7 +232,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 int main(int argc, char* argv[])
 {
     if (argc != 2) {
-        std::cerr << "You should write the index of client [from 0 to N]";
+        std::cerr << "You should write the index of client [from 0 to N]\n";
         return -1;
     }
     sf::TcpSocket server;

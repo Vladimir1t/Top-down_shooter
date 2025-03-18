@@ -10,11 +10,13 @@
 
 #include "TCP_server.hpp"
 
-void Receive() {
+int Receive() {
     sf::Time timeout = sf::milliseconds(15);
     /* Set port of tcp server */
     game::TCP_server server{53000, timeout};
-    server.init();
+    if(server.init() == -1){
+        return -1;
+    };
 
     game::game_state global_state;
 
