@@ -121,23 +121,19 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        if(move_x < 1) 
-                            move_x++;
+                        move_x_plus = 1;
                         current_state_hero = std::move(hero_right);
                         break;
                     case sf::Keyboard::Key::A: 
-                        if(move_x > -1) 
-                            move_x--;
+                        move_x_minus = 1;
                         current_state_hero = std::move(hero_left);
                         break;
                     case sf::Keyboard::Key::W: 
-                        if(move_y > -1) 
-                            move_y--;
+                        move_y_minus = 1;
                         current_state_hero = std::move(hero_up);
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y < 1) 
-                            move_y++;
+                        move_y_plus = 1;
                         current_state_hero = std::move(hero_down);
                         break;
             
@@ -148,24 +144,20 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
-                        if (move_x > -1) 
-                            move_x--;
+                        move_x_plus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::A: 
-                        if (move_x < 1) 
-                            move_x++;
+                        move_x_minus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
                     
                     case sf::Keyboard::Key::W: 
-                        if (move_y < 1)
-                            move_y++;
+                        move_y_minus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
                     case sf::Keyboard::Key::S: 
-                        if(move_y > -1) 
-                            move_y--;
+                        move_y_plus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
             
