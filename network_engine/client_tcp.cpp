@@ -42,10 +42,14 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 global_state.player_objects[i].setRotation(sf::radians(rot));
             }
         }
-        outcoming_data << ctrl_handler.move << ctrl_handler.time;
-        if(server.send(outcoming_data) != sf::Socket::Status::Done) {
-            std::cout << "cry about it\n";
+        if(ctrl_handler.changed){
+            outcoming_data << ctrl_handler.move_horz << ctrl_handler.move_vert << ctrl_handler.rotate;
+            ctrl_handler.changed = 0;
+            if(server.send(outcoming_data) != sf::Socket::Status::Done) {
+                std::cout << "cry about it\n";
+            }
         }
+        
         //ctrl_handler.move = 0;
         incoming_state.clear();
         outcoming_data.clear();
@@ -57,7 +61,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
-
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
     char tag_value[100];
 
@@ -88,38 +91,54 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     sf::Clock clock;
 
+    int move_x_old = 0;
+    int move_y_old = 0;
+
+    int move_x = 0;
+    int move_y = 0;
+
 	while (window.isOpen()) {
         // drawing and handling key buttons
-        sf::Time time_scince_last_frame = clock.restart();
-        ctrl_handler.time = time_scince_last_frame.asSeconds();
 
         while (std::optional<sf::Event> event = window.pollEvent()) {
-            if (const auto* textEntered = event->getIf<sf::Event::TextEntered>()) {
-                if (textEntered->unicode < 128) {
-                    char key = static_cast<char>(textEntered->unicode);
-                    switch (key) {
-                        case 'w':
-                            ctrl_handler.move = 1;
-                            break;
-                        case 's': 
-                            ctrl_handler.move = 2;
-                            break;
-                        case 'a': 
-                            ctrl_handler.move = 3;
-                            break;
-                        case 'd':
-                            ctrl_handler.move = 4;
-                            break;
-                        case 'q':
-                            ctrl_handler.move = 5;
-                            break;
-                        case 'e': 
-                            ctrl_handler.move = 6;
-                            break;
-                        default:
-                            ctrl_handler.move = 0;
-                            break;
-                    }
+            if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
+                switch (key_pressed->code) {
+                    case sf::Keyboard::Key::D:
+                        if(move_x < 1) move_x++;
+                        break;
+                    case sf::Keyboard::Key::A: 
+                        if(move_x > -1) move_x--;
+                        break;
+                    
+                    case sf::Keyboard::Key::W: 
+                        if(move_y > -1) move_y--;
+                        break;
+                    case sf::Keyboard::Key::S: 
+                        if(move_y < 1) move_y++;
+                        break;
+            
+                    default:
+                        break;
+                }
+            }
+            if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
+                switch (key_released->code) {
+                    case sf::Keyboard::Key::D:
+                        if(move_x > -1) move_x--;
+                        break;
+                    case sf::Keyboard::Key::A: 
+                        if(move_x < 1) move_x++;
+                        break;
+                    
+                    case sf::Keyboard::Key::W: 
+                        if(move_y < 1) move_y++;
+                        break;
+                    case sf::Keyboard::Key::S: 
+                        if(move_y > -1) move_y--;
+                        break;
+            
+                    default:
+                        break;
                 }
             }
             else if (event->is<sf::Event::Closed>()) {
@@ -133,6 +152,19 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 }
             }
         }
+
+        if(move_x_old != move_x){
+            move_x_old = move_x;
+            ctrl_handler.move_horz = move_x;
+            ctrl_handler.changed = 1;
+        }
+        if(move_y_old != move_y){
+            move_y_old = move_y;
+            ctrl_handler.move_vert = move_y;
+            ctrl_handler.changed = 1;
+        }
+
+
         // Render
         window.clear(sf::Color::Black);
 
@@ -180,7 +212,7 @@ int main(int argc, char* argv[])
     sf::Socket::Status status = server.connect(server_IP, port);
 
     game::game_state global_state;
-    game::control_struct ctrl_handler;
+    game::control_struct ctrl_handler = {};
     ushort player_count = 0;
 
     if (status != sf::Socket::Status::Done) {
