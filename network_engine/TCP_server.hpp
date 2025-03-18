@@ -58,7 +58,7 @@ public:
                     _outcoming_messages.emplace_back();
                     global_state.player_objects.emplace_back();
 
-                    global_state.player_objects.back().set_velocity({1.0, 1.0});
+                    global_state.player_objects.back().set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
                 }
             }
             int i = 0;
@@ -72,57 +72,34 @@ public:
             }
         }
         else {
-            std::cerr << "await timeout happend. Do something with this information, or don't" << std::endl; 
+            // std::cerr << "await timeout happend. Do something with this information, or don't" << std::endl; 
         }
     }
 
     void read_packets(game_state& global_state) {
-        int move;
-        float time, speed;
+
+        int move_horz, move_vert, rotate;
         for (int i = 0; i < _clients.size(); ++i){
             if (_incoming_messages[i].getDataSize() != 0) {
-                _incoming_messages[i] >> move >> time;
-                speed = time / 6;
-                std::cout << time << ' ' << move << '\n';
-                switch (move) {
-                    case 1:
-                        //std::cout << "w\n";
-                        global_state.player_objects[i].update(0, -speed, 0);
-                        break;
-                    case 2:
-                        //std::cout << "s\n";
-                        global_state.player_objects[i].update(0, speed, 0);
-                        break;
-                    case 3:
-                        //std::cout << "a\n"; 
-                        global_state.player_objects[i].update(-speed, 0, 0);
-                        break;
-                    case 4:
-                        //std::cout << "d\n";
-                        global_state.player_objects[i].update(speed, 0, 0);
-                        break;
-                    case 5:
-                        global_state.player_objects[i].update(0, 0, -speed);
-                        break;
-                    case 6:
-                        global_state.player_objects[i].update(0, 0, speed);
-                        break;
-                    default:
-                        /* stop buttom */
-                        break;
-                }
-                // >> vert >> horz >> rot;
-                // std::cout << i << ": got message: vert: " << vert << " horz: "
-                //     << horz << " rot: " << rot << std::endl;
-                //global_state.player_objects[i].update({vert, horz, rot});
+                _incoming_messages[i] >> move_horz >> move_vert >> rotate;
+                
+                std::cout << i << ": got message: vert: " << move_vert << " horz: "
+                    << move_horz << " rot: " << rotate << std::endl;
+                global_state.player_objects[i].set_velocity_and_rot({move_horz, move_vert}, rotate);
                 _incoming_messages[i].clear();
             }
         }
     }
 
+    void update_state(game_state& global_state){
+        for(int i = 0; i < _clients.size(); ++i){
+            global_state.player_objects[i].update();
+        }
+    }
+
     void create_messages(game_state& global_state) {
         ushort client_count = _clients.size();
-        std::cout << "client count " << client_count << std::endl; 
+        // std::cout << "client count " << client_count << std::endl; 
 
         for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;

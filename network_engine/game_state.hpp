@@ -6,23 +6,34 @@ namespace game {
 
 class control_struct final {
 public:
-    int move;
-    float time;
+    int move_horz;
+    int move_vert;
+    int rotate;
+    bool changed;
 };
 
 class object: public sf::RectangleShape{
-    sf::Vector2f velocity;
+    sf::Vector2f _velocity_coeff;
+    float _rotation_coeff;
+
+    sf::Vector2i _velocity;
+    int _rotation;
 
 public:
-    void update(float horz, float vert, float rot) {
-        //std::cout << velocity.x << ' ' << velocity.y << '\n'; 
-        move({velocity.x * horz, velocity.y * vert});
-        rotate(sf::radians(0.01 * rot));
+    void update() {
+        move({_velocity_coeff.x * _velocity.x, _velocity_coeff.y * _velocity.y});
+        rotate(sf::radians(_rotation_coeff * _rotation));
     }
 
-    void set_velocity(sf::Vector2f new_velocity){
-        velocity = new_velocity;
+    void set_coeff_velocity_and_rot(sf::Vector2f velocity_coeff, float rotation_coeff){
+        _velocity_coeff = velocity_coeff;
     }
+
+    void set_velocity_and_rot(sf::Vector2i new_velocity, int new_rotation){
+        _velocity = new_velocity;
+        _rotation = new_rotation;
+    }
+
 };
 
 class game_state final {
