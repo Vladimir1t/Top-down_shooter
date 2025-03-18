@@ -55,6 +55,21 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     }
 }
 
+static void change_position_sprite(sf::Clock& clock, sf::Sprite& current_state_hero, sf::Sprite& mod,
+    sf::Sprite& mod2, int& status_sprite) {
+
+    if (status_sprite == 1) {
+        current_state_hero = std::move(mod);
+        status_sprite = 0;
+    }
+    else {
+        current_state_hero = std::move(mod2);
+        status_sprite = 1;
+    }
+    clock.restart();
+
+}
+
 static void render_window(game::control_struct& ctrl_handler, const game::game_state& global_state,
     ushort& player_count, int index_cli) {
 
@@ -65,7 +80,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Map -----------
     sf::Texture texture_wood1, texture_wood2, texture_stone1;
-	  texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
+    texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
     texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
 
@@ -76,7 +91,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::Sprite map_5(texture_wood2);
     sf::Sprite map_6(texture_wood1);
 
-	  map_1.setPosition ({0, 0});
+    map_1.setPosition ({0, 0});
     map_2.setPosition ({490, 0});
     map_3.setPosition ({980, 0});
     map_4.setPosition ({0, 490});
@@ -86,21 +101,32 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Hero -----------
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
-	texture_hero_down.loadFromFile ("Animations/Idle_Base/Idle_Down-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_up.loadFromFile ("Animations/Idle_Base/Idle_Up-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_right.loadFromFile ("Animations/Idle_Base/Idle_Side-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
-    texture_hero_left.loadFromFile ("Animations/Idle_Base/Idle_LSide-Sheet.png", false, sf::IntRect({0, 0}, {50, 50}));   
+    sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
+	texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 50}));   
+    texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));   
+    texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({0, 0}, {64, 64})); 
+    texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+    texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));
+    texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+    texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
+    texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+
     sf::Sprite hero_down(texture_hero_down);
+    sf::Sprite hero_down2(texture_hero_down2);
     sf::Sprite hero_up(texture_hero_up);
+    sf::Sprite hero_up2(texture_hero_up2);
     sf::Sprite hero_right(texture_hero_right);
+    sf::Sprite hero_right2(texture_hero_right2);
     sf::Sprite hero_left(texture_hero_left);
+     sf::Sprite hero_left2(texture_hero_left2);
 
     sf::Sprite current_state_hero = std::move(hero_down);
     current_state_hero.setPosition({1, 1});
+    sf::Clock clock;
     //----------------------------
 
     //----------- view -----------
-    sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({800, 600}));
+    sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({700, 550}));
     //----------------------------
 
     int move_x_old = 0;
@@ -114,6 +140,8 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     int move_y_plus = 0;
     int move_y_minus = 0;
 
+    int status_sprite = 1;
+
 	while (window.isOpen()) {
         // drawing and handling key buttons
 
@@ -121,20 +149,35 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, current_state_hero, hero_right,
+                                hero_right2, status_sprite);
+                        }
                         move_x_plus = 1;
-                        current_state_hero = std::move(hero_right);
                         break;
+
                     case sf::Keyboard::Key::A: 
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, current_state_hero, hero_left,
+                                hero_left2, status_sprite);
+                        }
                         move_x_minus = 1;
-                        current_state_hero = std::move(hero_left);
                         break;
+
                     case sf::Keyboard::Key::W: 
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, current_state_hero, hero_up,
+                                hero_up2, status_sprite);
+                        }
                         move_y_minus = 1;
-                        current_state_hero = std::move(hero_up);
                         break;
+
                     case sf::Keyboard::Key::S: 
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, current_state_hero, hero_down,
+                                hero_down2, status_sprite);
+                        }
                         move_y_plus = 1;
-                        current_state_hero = std::move(hero_down);
                         break;
             
                     default:
@@ -151,7 +194,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         move_x_minus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
-                    
                     case sf::Keyboard::Key::W: 
                         move_y_minus = 0;
                         current_state_hero = std::move(hero_down);
@@ -160,7 +202,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         move_y_plus = 0;
                         current_state_hero = std::move(hero_down);
                         break;
-            
                     default:
                         break;
                 }
@@ -221,8 +262,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 	}
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "You should write the index of client [from 0 to N]\n";
         return -1;
