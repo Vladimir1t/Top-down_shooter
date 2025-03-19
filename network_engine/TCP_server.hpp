@@ -80,21 +80,22 @@ public:
 
     void read_packets(game_state& global_state) {
 
-        int move_x, move_y, rotate;
-        for (int i = 0; i < _clients.size(); ++i){
+        int move_x, move_y, rotate, sprite_status;
+        for (int i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
-                _incoming_messages[i] >> move_x >> move_y >> rotate;
-                
+                _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
+
                 std::cout << i << ": got message: vert: " << move_y << " horz: "
-                    << move_x << " rot: " << rotate << std::endl;
+                     << move_x << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
                 global_state.player_objects[i].set_velocity_and_rot({move_x, move_y}, rotate);
+                global_state.player_objects[i].sprite_status = sprite_status;
                 _incoming_messages[i].clear();
             }
         }
     }
 
     void update_state(game_state& global_state){
-        for(int i = 0; i < _clients.size(); ++i){
+        for (int i = 0; i < _clients.size(); ++i) {
             global_state.player_objects[i].update();
         }
     }
@@ -102,29 +103,28 @@ public:
     void create_messages(game_state& global_state) {
         ushort client_count = _clients.size();
         // std::cout << "client count " << client_count << std::endl; 
-
         for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
             for (int j = 0; j < client_count; ++j) {
                 _outcoming_messages[i] << global_state.player_objects[j].getPosition().x
                                        << global_state.player_objects[j].getPosition().y
-                                       << global_state.player_objects[j].getRotation().asRadians();
+                                       << global_state.player_objects[j].getRotation().asRadians()
+                                       << global_state.player_objects[j].sprite_status;
             }
         }
     }
 
     void send_packets() {
         int i = 0;
-        for (auto&& it_client = _clients.begin(); it_client != _clients.end(); ++it_client) {
+        for (auto&& it_client = _clients.begin(); it_client != _clients.end(); ++it_client, ++i) {
             try {
-                if (it_client->send(_outcoming_messages[i++]) != sf::Socket::Status::Done) {
+                if (it_client->send(_outcoming_messages[i]) != sf::Socket::Status::Done) {
                     std::cerr << "Error while sending to " << it_client->getRemoteAddress().value() 
                         << " " << it_client->getLocalPort() << std::endl;
                 }
             }
             catch (std::bad_optional_access& e) {
-                _clients.clear();
-                init();
+                std::cerr << e.what();
                 break;
             }
         }

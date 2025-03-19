@@ -10,6 +10,7 @@ public:
     int move_y;
     int rotate;
     bool changed;
+    int sprite_status;
 };
 
 class object: public sf::RectangleShape{
@@ -20,6 +21,8 @@ class object: public sf::RectangleShape{
     int _rotation;
 
 public:
+    int sprite_status;
+
     void update() {
         move({_velocity_coeff.x * _velocity.x, _velocity_coeff.y * _velocity.y});
         rotate(sf::radians(_rotation_coeff * _rotation));
@@ -33,7 +36,6 @@ public:
         _velocity = new_velocity;
         _rotation = new_rotation;
     }
-
 };
 
 class game_state final {

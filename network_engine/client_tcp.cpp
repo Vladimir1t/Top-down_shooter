@@ -10,6 +10,17 @@
 
 #include "game_state.hpp"
 
+enum class Status_sprite_index {
+    UP     = 10,
+    UP2    = 11,
+    DOWN   = 20,
+    DOWN2  = 21,
+    RIGHT  = 30,
+    RIGHT2 = 31,
+    LEFT   = 40,
+    LEFT2  = 41,
+};
+
 static std::mutex state_mutex;
 static int index_cli = 0;
 
@@ -25,25 +36,29 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
         }
         else {
             float x, y, rot;
+            int sprite_status;
             incoming_state >> player_count;
-            std::cout << "rn " << player_count << " are playing" << std::endl;
+            //std::cout << "rn " << player_count << " are playing" << std::endl;
 
             //needs better solution, but working rn
             std::lock_guard<std::mutex> lock(state_mutex);
             global_state.player_objects.clear();
-            for (int i = 0; i < player_count; ++i){
+            for (int i = 0; i < player_count; ++i) {
                 global_state.player_objects.emplace_back();
             }
 
-            for (ushort i = 0; i < player_count; ++i){
-                incoming_state >> x >> y >> rot;
-                std::cout << "Player " << i << ' ' << x << ' ' << y << ' ' << rot << std::endl;
+            for (ushort i = 0; i < player_count; ++i ) {
+                incoming_state >> x >> y >> rot >> sprite_status;
+                std::cout << "Player " << i << ' ' << x << ' ' << y << ' ' 
+                          << rot << ' ' << sprite_status << std::endl;
                 global_state.player_objects[i].setPosition({x, y});
                 global_state.player_objects[i].setRotation(sf::radians(rot));
+                global_state.player_objects[i].sprite_status = sprite_status;
             }
         }
-        if(ctrl_handler.changed){
-            outcoming_data << ctrl_handler.move_x << ctrl_handler.move_y << ctrl_handler.rotate;
+        if (ctrl_handler.changed) {
+            outcoming_data << ctrl_handler.move_x << ctrl_handler.move_y 
+                           << ctrl_handler.rotate << ctrl_handler.sprite_status;
             ctrl_handler.changed = 0;
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "cry about it\n";
@@ -55,19 +70,18 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     }
 }
 
-static void change_position_sprite(sf::Clock& clock, sf::Sprite& current_state_hero, sf::Sprite& mod,
-    sf::Sprite& mod2, int& status_sprite) {
+static void change_position_sprite(sf::Clock& clock, int& status_sprite, game::control_struct& ctrl_handler, 
+    Status_sprite_index sprite_index) {
 
     if (status_sprite == 1) {
-        current_state_hero = std::move(mod);
         status_sprite = 0;
+        ctrl_handler.sprite_status = static_cast<int>(sprite_index) + status_sprite;
     }
     else {
-        current_state_hero = std::move(mod2);
         status_sprite = 1;
+        ctrl_handler.sprite_status = static_cast<int>(sprite_index) + status_sprite;
     }
     clock.restart();
-
 }
 
 static void render_window(game::control_struct& ctrl_handler, const game::game_state& global_state,
@@ -102,7 +116,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     //----------- Hero -----------
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
     sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
-	texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 50}));   
+	texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
     texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));   
     texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({0, 0}, {64, 64})); 
     texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
@@ -118,7 +132,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::Sprite hero_right(texture_hero_right);
     sf::Sprite hero_right2(texture_hero_right2);
     sf::Sprite hero_left(texture_hero_left);
-     sf::Sprite hero_left2(texture_hero_left2);
+    sf::Sprite hero_left2(texture_hero_left2);
 
     sf::Sprite current_state_hero = std::move(hero_down);
     current_state_hero.setPosition({1, 1});
@@ -149,33 +163,37 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
-                        if (clock.getElapsedTime().asSeconds() > 0.2) {
-                            change_position_sprite(clock, current_state_hero, hero_right,
-                                hero_right2, status_sprite);
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, status_sprite, 
+                                ctrl_handler, Status_sprite_index::RIGHT);
+                            ctrl_handler.changed = 1;
                         }
                         move_x_plus = 1;
                         break;
 
                     case sf::Keyboard::Key::A: 
-                        if (clock.getElapsedTime().asSeconds() > 0.2) {
-                            change_position_sprite(clock, current_state_hero, hero_left,
-                                hero_left2, status_sprite);
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, status_sprite, 
+                                ctrl_handler, Status_sprite_index::LEFT);
+                            ctrl_handler.changed = 1;
                         }
                         move_x_minus = 1;
                         break;
 
                     case sf::Keyboard::Key::W: 
-                        if (clock.getElapsedTime().asSeconds() > 0.2) {
-                            change_position_sprite(clock, current_state_hero, hero_up,
-                                hero_up2, status_sprite);
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, status_sprite, 
+                                ctrl_handler, Status_sprite_index::UP);
+                            ctrl_handler.changed = 1;
                         }
                         move_y_minus = 1;
                         break;
 
                     case sf::Keyboard::Key::S: 
-                        if (clock.getElapsedTime().asSeconds() > 0.2) {
-                            change_position_sprite(clock, current_state_hero, hero_down,
-                                hero_down2, status_sprite);
+                        if (clock.getElapsedTime().asSeconds() > 0.15) {
+                            change_position_sprite(clock, status_sprite, 
+                                ctrl_handler, Status_sprite_index::DOWN);
+                            ctrl_handler.changed = 1;
                         }
                         move_y_plus = 1;
                         break;
@@ -188,19 +206,22 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
                         move_x_plus = 0;
-                        current_state_hero = std::move(hero_down);
+                        ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
+                        ctrl_handler.changed = 1;
                         break;
                     case sf::Keyboard::Key::A: 
                         move_x_minus = 0;
-                        current_state_hero = std::move(hero_down);
+                        ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
                         break;
                     case sf::Keyboard::Key::W: 
                         move_y_minus = 0;
-                        current_state_hero = std::move(hero_down);
+                        ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
+                        ctrl_handler.changed = 1;
                         break;
                     case sf::Keyboard::Key::S: 
                         move_y_plus = 0;
-                        current_state_hero = std::move(hero_down);
+                        ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
+                        ctrl_handler.changed = 1;
                         break;
                     default:
                         break;
@@ -246,7 +267,34 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         for (ushort i = 0; i < player_count; ++i){
             std::lock_guard<std::mutex> lock(state_mutex);
 
-            window.draw(global_state.player_objects[i]);
+            switch (static_cast<Status_sprite_index>(global_state.player_objects[i].sprite_status)) {
+                case Status_sprite_index::UP:
+                    current_state_hero = std::move(hero_up);
+                    break;
+                case Status_sprite_index::UP2:
+                    current_state_hero = std::move(hero_up2);
+                    break;
+                case Status_sprite_index::DOWN:
+                    current_state_hero = std::move(hero_down);
+                    break;
+                case Status_sprite_index::DOWN2:
+                    current_state_hero = std::move(hero_down2);
+                    break;
+                case Status_sprite_index::RIGHT:
+                    current_state_hero = std::move(hero_right);
+                    break;
+                case Status_sprite_index::RIGHT2:
+                    current_state_hero = std::move(hero_right2);
+                    break;
+                case Status_sprite_index::LEFT:
+                    current_state_hero = std::move(hero_left);
+                    break;
+                case Status_sprite_index::LEFT2:
+                    current_state_hero = std::move(hero_left2);
+                    break;
+            }
+            window.draw(global_state.player_objects[i]); 
+
             current_state_hero.setPosition(global_state.player_objects[i].getPosition());
             current_state_hero.setRotation(global_state.player_objects[i].getRotation());
             window.draw(current_state_hero);
@@ -264,7 +312,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        std::cerr << "You should write the index of client [from 0 to N]\n";
+        std::cerr << "You should write the correct index of client [from 0 to N]\n";
         return -1;
     }
     sf::TcpSocket server;
