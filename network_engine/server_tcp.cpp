@@ -18,7 +18,7 @@ int Receive() {
         return -1;
     };
 
-    game::game_state global_state;
+    game::game_state_server global_state;
 
     while (true) {
         server.wait_and_handle(global_state);

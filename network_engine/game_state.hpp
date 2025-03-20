@@ -38,9 +38,14 @@ public:
     }
 };
 
-class game_state final {
+class game_state_client final {
 public:
-    std::vector<object> player_objects;
+    std::unordered_map<int, object> player_objects;
+};
+
+class game_state_server final{
+    public:
+        std::vector<object> player_objects;
 };
 
 class Mob {

@@ -24,7 +24,7 @@ enum class Status_sprite_index {
 static std::mutex state_mutex;
 static int index_cli = 0;
 
-static void network_handler(game::control_struct& ctrl_handler, game::game_state& global_state,
+static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
     sf::TcpSocket& server, ushort& player_count) {
 
     sf::Packet incoming_state;
@@ -35,6 +35,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             std::cerr << "Error while recieving" << std::endl;
         }
         else {
+            int unique_index;
             float x, y, rot;
             int sprite_status;
             incoming_state >> player_count;
@@ -42,18 +43,15 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 
             //needs better solution, but working rn
             std::lock_guard<std::mutex> lock(state_mutex);
-            global_state.player_objects.clear();
-            for (int i = 0; i < player_count; ++i) {
-                global_state.player_objects.emplace_back();
-            }
 
-            for (ushort i = 0; i < player_count; ++i ) {
-                incoming_state >> x >> y >> rot >> sprite_status;
-                std::cout << "Player " << i << ' ' << x << ' ' << y << ' ' 
+            for (int i = 0; i < player_count; ++i) {
+                incoming_state >> unique_index >> x >> y >> rot >> sprite_status;
+                std::cout << "Player " << unique_index << ' ' << x << ' ' << y << ' ' 
                           << rot << ' ' << sprite_status << std::endl;
-                global_state.player_objects[i].setPosition({x, y});
-                global_state.player_objects[i].setRotation(sf::radians(rot));
-                global_state.player_objects[i].sprite_status = sprite_status;
+                game::object& obj = global_state.player_objects[unique_index];
+                obj.setPosition({x, y});
+                obj.setRotation(sf::radians(rot));
+                obj.sprite_status = sprite_status;
             }
         }
         if (ctrl_handler.changed) {
@@ -84,7 +82,7 @@ static void change_position_sprite(sf::Clock& clock, int& status_sprite, game::c
     clock.restart();
 }
 
-static void render_window(game::control_struct& ctrl_handler, const game::game_state& global_state,
+static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state,
     ushort& player_count, int index_cli) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
@@ -264,10 +262,10 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         window.draw(map_5);
         window.draw(map_6);
 
-        for (ushort i = 0; i < player_count; ++i){
+        for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
 
-            switch (static_cast<Status_sprite_index>(global_state.player_objects[i].sprite_status)) {
+            switch (static_cast<Status_sprite_index>(obj->second.sprite_status)) {
                 case Status_sprite_index::UP:
                     current_state_hero = std::move(hero_up);
                     break;
@@ -293,15 +291,15 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                     current_state_hero = std::move(hero_left2);
                     break;
             }
-            window.draw(global_state.player_objects[i]); 
+            window.draw(obj->second); 
 
-            current_state_hero.setPosition(global_state.player_objects[i].getPosition());
-            current_state_hero.setRotation(global_state.player_objects[i].getRotation());
+            current_state_hero.setPosition(obj->second.getPosition());
+            current_state_hero.setRotation(obj->second.getRotation());
             window.draw(current_state_hero);
 
             /* ---- View ---- */
-            if (index_cli == i) {
-                view.setCenter(global_state.player_objects[i].getPosition());
+            if (index_cli == obj->first) {
+                view.setCenter(obj->second.getPosition());
                 window.setView(view);
             }
             // std::cout << "drawn for player " << i << std::endl;
@@ -323,7 +321,7 @@ int main(int argc, char* argv[]) {
     std::cout << "connecting to " << server_IP << " on port " << port << "..." << std::endl;
     sf::Socket::Status status = server.connect(server_IP, port);
 
-    game::game_state global_state;
+    game::game_state_client global_state;
     game::control_struct ctrl_handler = {};
     ushort player_count = 0;
 
