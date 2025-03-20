@@ -39,7 +39,7 @@ public:
         return 0;
     }
 
-    void wait_and_handle(game_state& global_state) {
+    void wait_and_handle(game_state_server& global_state) {
         if (_selector.wait(_timeout)) { 
             //handling all connections
             if (_selector.isReady(_listener)){
@@ -78,7 +78,7 @@ public:
         }
     }
 
-    void read_packets(game_state& global_state) {
+    void read_packets(game_state_server& global_state) {
 
         int move_x, move_y, rotate, sprite_status;
         for (int i = 0; i < _clients.size(); ++i) {
@@ -94,19 +94,20 @@ public:
         }
     }
 
-    void update_state(game_state& global_state){
+    void update_state(game_state_server& global_state){
         for (int i = 0; i < _clients.size(); ++i) {
             global_state.player_objects[i].update();
         }
     }
 
-    void create_messages(game_state& global_state) {
+    void create_messages(game_state_server& global_state) {
         ushort client_count = _clients.size();
         // std::cout << "client count " << client_count << std::endl; 
         for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
             for (int j = 0; j < client_count; ++j) {
-                _outcoming_messages[i] << global_state.player_objects[j].getPosition().x
+                _outcoming_messages[i] << j
+                                       << global_state.player_objects[j].getPosition().x
                                        << global_state.player_objects[j].getPosition().y
                                        << global_state.player_objects[j].getRotation().asRadians()
                                        << global_state.player_objects[j].sprite_status;
