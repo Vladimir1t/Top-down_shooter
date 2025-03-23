@@ -28,6 +28,7 @@ int Receive() {
         // std::cout << "packets read" << std::endl;
 
         server.update_state(global_state);
+        // std::cout << "state updated" << std::endl;
 
         server.create_messages(global_state);
         // std::cout << "messages created" << std::endl;
