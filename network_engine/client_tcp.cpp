@@ -35,19 +35,19 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             std::cerr << "Error while recieving" << std::endl;
         }
         else {
-            int unique_index;
+            uint64_t unique_index;
             float x, y, rot;
             int sprite_status;
             incoming_state >> player_count;
-            //std::cout << "rn " << player_count << " are playing" << std::endl;
+            // std::cout << "rn " << player_count << " are playing" << std::endl;
 
             //needs better solution, but working rn
             std::lock_guard<std::mutex> lock(state_mutex);
 
             for (int i = 0; i < player_count; ++i) {
                 incoming_state >> unique_index >> x >> y >> rot >> sprite_status;
-                std::cout << "Player " << unique_index << ' ' << x << ' ' << y << ' ' 
-                          << rot << ' ' << sprite_status << std::endl;
+                // std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
+                //           << rot << "\n\ts: " << sprite_status << std::endl;
                 game::object& obj = global_state.player_objects[unique_index];
                 obj.setPosition({x, y});
                 obj.setRotation(sf::radians(rot));
@@ -59,7 +59,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                            << ctrl_handler.rotate << ctrl_handler.sprite_status;
             ctrl_handler.changed = 0;
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
-                std::cout << "cry about it\n";
+                std::cout << "error while sending to server\n";
             }
         }
         
@@ -92,9 +92,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     //----------- Map -----------
     sf::Texture texture_wood1, texture_wood2, texture_stone1;
-    texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
-    texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
-    texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
+    bool success = true;
+    success = success && texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
+    success = success && texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
+    success = success && texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
+
+    if(!success) std::cout << "error while opening map files\n";
 
     sf::Sprite map_1(texture_wood1);
     sf::Sprite map_2(texture_wood2);
@@ -112,16 +115,20 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     //---------------------------
 
     //----------- Hero -----------
+    success = true;
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
     sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
-	texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
-    texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));   
-    texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({0, 0}, {64, 64})); 
-    texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
-    texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));
-    texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
-    texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
-    texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+	success = success && texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
+    success = success && texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));   
+    success = success && texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({0, 0}, {64, 64})); 
+    success = success && texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+    success = success && texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));
+    success = success && texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+    success = success && texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
+    success = success && texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+
+    if(!success) std::cout << "error while opening animation files\n";
+
 
     sf::Sprite hero_down(texture_hero_down);
     sf::Sprite hero_down2(texture_hero_down2);

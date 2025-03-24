@@ -40,12 +40,25 @@ public:
 
 class game_state_client final {
 public:
-    std::unordered_map<int, object> player_objects;
+    std::unordered_map<uint64_t, object> player_objects;
 };
 
 class game_state_server final{
     public:
-        std::vector<object> player_objects;
+        uint64_t next_player_unique_id = 0;
+        std::vector<std::pair<uint64_t, object>> player_objects;
+
+        void add_player(){
+            player_objects.emplace_back();
+            player_objects.back().first = next_player_unique_id++;
+            player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
+        }
+
+        void update_state(){
+            for(int i = 0; i < player_objects.size(); ++i){
+                player_objects[i].second.update();
+            }
+        }
 };
 
 class Mob {

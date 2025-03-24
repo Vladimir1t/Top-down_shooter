@@ -57,9 +57,8 @@ public:
                     _clients.push_back(std::move(client)); 
                     _incoming_messages.emplace_back(); //adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
-                    global_state.player_objects.emplace_back();
 
-                    global_state.player_objects.back().set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
+                    global_state.add_player();
                 }
             }
             int i = 0;
@@ -79,38 +78,46 @@ public:
     }
 
     void read_packets(game_state_server& global_state) {
-
         int move_x, move_y, rotate, sprite_status;
         for (int i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
                 _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
 
-                std::cout << i << ": got message: vert: " << move_y << " horz: "
-                     << move_x << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
-                global_state.player_objects[i].set_velocity_and_rot({move_x, move_y}, rotate);
-                global_state.player_objects[i].sprite_status = sprite_status;
+                std::cout << i << ": got message: x: " << move_x << " y: "
+                     << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
+                global_state.player_objects[i].second.set_velocity_and_rot({move_x, move_y}, rotate);
+                global_state.player_objects[i].second.sprite_status = sprite_status;
                 _incoming_messages[i].clear();
             }
         }
     }
 
     void update_state(game_state_server& global_state){
-        for (int i = 0; i < _clients.size(); ++i) {
-            global_state.player_objects[i].update();
-        }
+        global_state.update_state();
     }
 
     void create_messages(game_state_server& global_state) {
         ushort client_count = _clients.size();
         // std::cout << "client count " << client_count << std::endl; 
+        object* obj;
+        uint64_t id;
         for (int i = 0; i < client_count; ++i) {
             _outcoming_messages[i] << client_count;
             for (int j = 0; j < client_count; ++j) {
-                _outcoming_messages[i] << j
-                                       << global_state.player_objects[j].getPosition().x
-                                       << global_state.player_objects[j].getPosition().y
-                                       << global_state.player_objects[j].getRotation().asRadians()
-                                       << global_state.player_objects[j].sprite_status;
+                obj = &(global_state.player_objects[j].second);
+                id = global_state.player_objects[j].first;
+                _outcoming_messages[i] << id
+                                       << obj->getPosition().x
+                                       << obj->getPosition().y
+                                       << obj->getRotation().asRadians()
+                                       << obj->sprite_status;
+                
+                // std::cout << "player № " << i 
+                // << "\n\tid:" << id
+                // << "\n\tx:" << obj->getPosition().x
+                // << "\n\ty:" << obj->getPosition().y
+                // << "\n\tr:" << obj->getRotation().asRadians()
+                // << "\n\ts:" << obj->sprite_status << std::endl;
             }
         }
     }
