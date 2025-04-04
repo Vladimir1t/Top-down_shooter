@@ -62,13 +62,76 @@ class game_state_server final{
 };
 
 class Mob {
-public:
-    size_t index = 0;
-    typename sf::Vector2f coords = {0, 0};
-    Mob(sf::Vector2f coords) : coords(coords) {};
-    Mob() = default;
 
-    // add sprite
+public:
+    sf::Sprite _sprite;
+    sf::Vector2f _coords;
+    sf::Texture _texture;
+
+    uint32_t _health;
+    uint32_t _speed;
+
+    Mob() = default;
+    Mob(const sf::Sprite& sprite, uint32_t health = 100) : _sprite(sprite), _health(health) {};
+
+    void set_graphics(const sf::Sprite& sprite) {
+       
+        _sprite = sprite;
+    }
+    void set_position(sf::Vector2f coords) {
+        _sprite.setPosition(coords);
+    }
+    void set_sprite(sf::Sprite& sprite) {
+        _sprite = sprite;
+    }
+    void set_rotation(sf::Angle rot) {
+        _sprite.setRotation(rot);
+    }
+    sf::Sprite get_sprite() {
+        return _sprite;
+    }
 };
 
+class window_info {
+    sf::Font font;
+    float fps;
+    std::string string_brief;
+
+public:
+
+    window_info() = default;
+
+    window_info(std::string file_name) {
+        if (!font.openFromFile(file_name)) {
+            std::cerr << "reading file error\n";
+        }
+    }
+
+    void update_info(float delta_time, int health) {
+        fps = 1000.0f / delta_time;
+        string_brief = "FPS = " + std::to_string(fps) + "\nHealth = " + std::to_string(health);
+        std::cout << string_brief << '\n';
+    }
+
+    void render(sf::RenderWindow& window, sf::View& view) {
+        sf::Text frame_rate_text(font);
+        //frame_rate_text.setFont(font);
+        frame_rate_text.setString(string_brief);
+        frame_rate_text.setCharacterSize(10); 
+        frame_rate_text.setFillColor(sf::Color::White); 
+       
+        sf::Vector2f view_center = view.getCenter();
+        sf::Vector2f view_size = view.getSize();
+
+        frame_rate_text.setPosition(
+            // {global_state.player_objects.at(index_cli).getPosition()}   
+            {view_center.x - view_size.x / 2 + 20,
+            view_center.y - view_size.y / 2 + 20}
+        );
+
+        window.draw(frame_rate_text);
+    }
+
+};
 }
+

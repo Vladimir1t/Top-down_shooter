@@ -22,7 +22,9 @@ enum class Status_sprite_index {
 };
 
 static std::mutex state_mutex;
-static int index_cli = 0;
+static int index_cli;
+static sf::Clock clock_fps;
+static sf::Time delta_time;
 
 static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
     sf::TcpSocket& server, ushort& player_count) {
@@ -35,6 +37,8 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             std::cerr << "Error while recieving" << std::endl;
         }
         else {
+            delta_time = clock_fps.restart();
+
             uint64_t unique_index;
             float x, y, rot;
             int sprite_status;
@@ -88,7 +92,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
-    char tag_value[100];
+    char tag_value[100] = {};
 
     //----------- Map -----------
     sf::Texture texture_wood1, texture_wood2, texture_stone1;
@@ -97,7 +101,8 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     success = success && texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
     success = success && texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
 
-    if(!success) std::cout << "error while opening map files\n";
+    if (!success) 
+        std::cout << "error while opening map files\n";
 
     sf::Sprite map_1(texture_wood1);
     sf::Sprite map_2(texture_wood2);
@@ -118,17 +123,25 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     success = true;
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
     sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
-	success = success && texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
-    success = success && texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));   
-    success = success && texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({0, 0}, {64, 64})); 
-    success = success && texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
-    success = success && texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));
-    success = success && texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
-    success = success && texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({0, 0}, {64, 64}));   
-    success = success && texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", false, sf::IntRect({192, 0}, {64, 64}));
+	success = success && texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png",
+                                                        false, sf::IntRect({0, 0}, {64, 64}));   
+    success = success && texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", 
+                                                        false, sf::IntRect({192, 0}, {64, 64}));   
+    success = success && texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
+                                                        false, sf::IntRect({0, 0}, {64, 64})); 
+    success = success && texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
+                                                        false, sf::IntRect({192, 0}, {64, 64}));
+    success = success && texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
+                                                        false, sf::IntRect({0, 0}, {64, 64}));
+    success = success && texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
+                                                        false, sf::IntRect({192, 0}, {64, 64}));
+    success = success && texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
+                                                        false, sf::IntRect({0, 0}, {64, 64}));   
+    success = success && texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
+                                                        false, sf::IntRect({192, 0}, {64, 64}));
 
-    if(!success) std::cout << "error while opening animation files\n";
-
+    if (!success) 
+        std::cout << "error while opening animation files\n";
 
     sf::Sprite hero_down(texture_hero_down);
     sf::Sprite hero_down2(texture_hero_down2);
@@ -139,8 +152,9 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     sf::Sprite hero_left(texture_hero_left);
     sf::Sprite hero_left2(texture_hero_left2);
 
-    sf::Sprite current_state_hero = std::move(hero_down);
-    current_state_hero.setPosition({1, 1});
+    game::Mob hero(hero_down);
+    hero.set_position({1, 1});
+
     sf::Clock clock;
     //----------------------------
 
@@ -269,47 +283,52 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         window.draw(map_5);
         window.draw(map_6);
 
+        /* ------ FPS ------- */
+        game::window_info fps_info("open-sans/OpenSans-Bold.ttf");
+        fps_info.update_info(delta_time.asMilliseconds(), hero._health);
+        fps_info.render(window, view);
+        /* ------------------ */
+
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
 
             switch (static_cast<Status_sprite_index>(obj->second.sprite_status)) {
                 case Status_sprite_index::UP:
-                    current_state_hero = std::move(hero_up);
+                    hero.set_sprite(hero_up);
                     break;
                 case Status_sprite_index::UP2:
-                    current_state_hero = std::move(hero_up2);
+                    hero.set_sprite(hero_up2);
                     break;
                 case Status_sprite_index::DOWN:
-                    current_state_hero = std::move(hero_down);
+                    hero.set_sprite(hero_down);
                     break;
                 case Status_sprite_index::DOWN2:
-                    current_state_hero = std::move(hero_down2);
+                    hero.set_sprite(hero_down2);
                     break;
                 case Status_sprite_index::RIGHT:
-                    current_state_hero = std::move(hero_right);
+                    hero.set_sprite(hero_right);
                     break;
                 case Status_sprite_index::RIGHT2:
-                    current_state_hero = std::move(hero_right2);
+                    hero.set_sprite(hero_right2);
                     break;
                 case Status_sprite_index::LEFT:
-                    current_state_hero = std::move(hero_left);
+                    hero.set_sprite(hero_left);
                     break;
                 case Status_sprite_index::LEFT2:
-                    current_state_hero = std::move(hero_left2);
+                    hero.set_sprite(hero_left2);
                     break;
             }
             window.draw(obj->second); 
 
-            current_state_hero.setPosition(obj->second.getPosition());
-            current_state_hero.setRotation(obj->second.getRotation());
-            window.draw(current_state_hero);
+            hero.set_position(obj->second.getPosition());
+            hero.set_rotation(obj->second.getRotation());
+            window.draw(hero.get_sprite());
 
             /* ---- View ---- */
             if (index_cli == obj->first) {
                 view.setCenter(obj->second.getPosition());
                 window.setView(view);
             }
-            // std::cout << "drawn for player " << i << std::endl;
         }
         window.display();
 	}
