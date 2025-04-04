@@ -2,6 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include <iostream>
+#include <array>
+
 namespace game {
 
 class control_struct final {
@@ -43,7 +46,7 @@ public:
     std::unordered_map<uint64_t, object> player_objects;
 };
 
-class game_state_server final{
+class game_state_server final {
     public:
         uint64_t next_player_unique_id = 0;
         std::vector<std::pair<uint64_t, object>> player_objects;
@@ -63,16 +66,17 @@ class game_state_server final{
 
 class Mob {
 
-public:
     sf::Sprite _sprite;
     sf::Vector2f _coords;
     sf::Texture _texture;
 
-    uint32_t _health;
-    uint32_t _speed;
+public:
+
+    uint32_t health;
+    uint32_t speed;
 
     Mob() = default;
-    Mob(const sf::Sprite& sprite, uint32_t health = 100) : _sprite(sprite), _health(health) {};
+    Mob(const sf::Sprite& sprite, uint32_t health = 100) : _sprite(sprite), health(health) {};
 
     void set_graphics(const sf::Sprite& sprite) {
        
@@ -93,43 +97,90 @@ public:
 };
 
 class window_info {
-    sf::Font font;
-    float fps;
-    std::string string_brief;
+
+    sf::Font _font;
+    float _fps;
+    std::string _string_info;
 
 public:
 
     window_info() = default;
 
     window_info(std::string file_name) {
-        if (!font.openFromFile(file_name)) {
+        if (!_font.openFromFile(file_name)) {
             std::cerr << "reading file error\n";
         }
     }
 
     void update_info(float delta_time, int health) {
-        fps = 1000.0f / delta_time;
-        string_brief = "FPS = " + std::to_string(fps) + "\nHealth = " + std::to_string(health);
-        std::cout << string_brief << '\n';
+        _fps = 1000.0f / delta_time;
+        _string_info = "FPS = " + std::to_string(_fps) + "\nHealth = " + std::to_string(health);
     }
 
     void render(sf::RenderWindow& window, sf::View& view) {
-        sf::Text frame_rate_text(font);
-        //frame_rate_text.setFont(font);
-        frame_rate_text.setString(string_brief);
+        sf::Text frame_rate_text(_font);
+        frame_rate_text.setString(_string_info);
         frame_rate_text.setCharacterSize(10); 
         frame_rate_text.setFillColor(sf::Color::White); 
        
         sf::Vector2f view_center = view.getCenter();
         sf::Vector2f view_size = view.getSize();
 
-        frame_rate_text.setPosition(
-            // {global_state.player_objects.at(index_cli).getPosition()}   
-            {view_center.x - view_size.x / 2 + 20,
-            view_center.y - view_size.y / 2 + 20}
-        );
+        frame_rate_text.setPosition({view_center.x - view_size.x / 2 + 20,
+                                     view_center.y - view_size.y / 2 + 20});
 
         window.draw(frame_rate_text);
+    }
+};
+
+class Map {
+
+private:
+    std::vector<sf::Sprite> _maps_blocks;
+    std::array<sf::Texture, 5> _textures;
+
+public: 
+
+    Map() = default;
+
+    Map(std::string file_name) {
+        bool success = true;
+        success = success && _textures[0].loadFromFile (file_name, false, sf::IntRect({224, 0}, {48, 48}));   
+        success = success && _textures[1].loadFromFile (file_name, false, sf::IntRect({272, 0}, {48, 48}));   
+        success = success && _textures[2].loadFromFile (file_name, false, sf::IntRect({64, 0}, {48, 48}));  
+        success = success && _textures[3].loadFromFile (file_name, false, sf::IntRect({0, 304}, {48, 48}));  
+        success = success && _textures[4].loadFromFile (file_name, false, sf::IntRect({112, 0}, {48, 48}));  
+
+        if (!success) 
+            std::cout << "error while opening map file\n";
+    }
+
+    std::vector<sf::Sprite> make_map() {
+        
+        std::vector<sf::Sprite> maps_blocks;
+
+        for (int i = 0; i < 110; ++i) {
+            sf::Sprite map(_textures[i % 5]);
+            maps_blocks.push_back(map);
+        }
+        for (float y = 0; y < 10; ++y) {
+            for (float x = 0; x < 10; ++x) {
+                int index = y * 10 + x;
+                maps_blocks[index].setPosition({x * 46, y * 46});
+            }
+        }
+
+        _maps_blocks = maps_blocks;
+
+        return maps_blocks;
+    }
+
+    void render(sf::RenderWindow& window) {
+        std::cout << "size = " << _maps_blocks.size() << '\n';
+        for (auto block : _maps_blocks) {
+            window.draw(block);
+        }
+        // window.draw(_maps_blocks[1]);
     }
 
 };

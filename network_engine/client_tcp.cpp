@@ -45,7 +45,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             incoming_state >> player_count;
             // std::cout << "rn " << player_count << " are playing" << std::endl;
 
-            //needs better solution, but working rn
             std::lock_guard<std::mutex> lock(state_mutex);
 
             for (int i = 0; i < player_count; ++i) {
@@ -95,34 +94,14 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     char tag_value[100] = {};
 
     //----------- Map -----------
-    sf::Texture texture_wood1, texture_wood2, texture_stone1;
-    bool success = true;
-    success = success && texture_wood1.loadFromFile ("Animations/map/map_wood1.png", false, sf::IntRect({50, 50}, {540, 540}));   
-    success = success && texture_wood2.loadFromFile ("Animations/map/map_wood2.png", false, sf::IntRect({50, 50}, {540, 540}));   
-    success = success && texture_stone1.loadFromFile ("Animations/map/map_stone1.png", false, sf::IntRect({0, 0}, {490, 490}));  
-
-    if (!success) 
-        std::cout << "error while opening map files\n";
-
-    sf::Sprite map_1(texture_wood1);
-    sf::Sprite map_2(texture_wood2);
-    sf::Sprite map_3(texture_stone1);
-    sf::Sprite map_4(texture_stone1);
-    sf::Sprite map_5(texture_wood2);
-    sf::Sprite map_6(texture_wood1);
-
-    map_1.setPosition ({0, 0});
-    map_2.setPosition ({490, 0});
-    map_3.setPosition ({980, 0});
-    map_4.setPosition ({0, 490});
-    map_5.setPosition ({490, 490});
-    map_6.setPosition ({980, 490});
+    game::Map map("Animations/map/map.png");
+    map.make_map();
     //---------------------------
 
     //----------- Hero -----------
-    success = true;
     sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
     sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
+    bool success = true;
 	success = success && texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png",
                                                         false, sf::IntRect({0, 0}, {64, 64}));   
     success = success && texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", 
@@ -159,7 +138,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     //----------------------------
 
     //----------- view -----------
-    sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({700, 550}));
+    sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({600, 400}));
     //----------------------------
 
     int move_x_old = 0;
@@ -272,20 +251,16 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             ctrl_handler.changed = 1;
         }
 
-        // Render
+        /* Render */
         window.clear(sf::Color::Black);
 
-        /* ---- Map ---- */
-        window.draw(map_1);
-        window.draw(map_2);
-        window.draw(map_3);
-        window.draw(map_4);
-        window.draw(map_5);
-        window.draw(map_6);
-
+        /* ------ Map ------- */
+        map.render(window);
+        /* ------------------ */
+        
         /* ------ FPS ------- */
         game::window_info fps_info("open-sans/OpenSans-Bold.ttf");
-        fps_info.update_info(delta_time.asMilliseconds(), hero._health);
+        fps_info.update_info(delta_time.asMilliseconds(), hero.health);
         fps_info.render(window, view);
         /* ------------------ */
 
