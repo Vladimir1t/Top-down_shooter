@@ -10,17 +10,6 @@
 
 #include "game_state.hpp"
 
-enum class Status_sprite_index {
-    UP     = 10,
-    UP2    = 11,
-    DOWN   = 20,
-    DOWN2  = 21,
-    RIGHT  = 30,
-    RIGHT2 = 31,
-    LEFT   = 40,
-    LEFT2  = 41,
-};
-
 static std::mutex state_mutex;
 static int index_cli;
 static sf::Clock clock_fps;
@@ -99,43 +88,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     //---------------------------
 
     //----------- Hero -----------
-    sf::Texture texture_hero_down, texture_hero_up, texture_hero_right, texture_hero_left;
-    sf::Texture texture_hero_down2, texture_hero_up2, texture_hero_right2, texture_hero_left2;
-    bool success = true;
-	success = success && texture_hero_down.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png",
-                                                        false, sf::IntRect({0, 0}, {64, 64}));   
-    success = success && texture_hero_down2.loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", 
-                                                        false, sf::IntRect({192, 0}, {64, 64}));   
-    success = success && texture_hero_up.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
-                                                        false, sf::IntRect({0, 0}, {64, 64})); 
-    success = success && texture_hero_up2.loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
-                                                        false, sf::IntRect({192, 0}, {64, 64}));
-    success = success && texture_hero_right.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
-                                                        false, sf::IntRect({0, 0}, {64, 64}));
-    success = success && texture_hero_right2.loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
-                                                        false, sf::IntRect({192, 0}, {64, 64}));
-    success = success && texture_hero_left.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
-                                                        false, sf::IntRect({0, 0}, {64, 64}));   
-    success = success && texture_hero_left2.loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
-                                                        false, sf::IntRect({192, 0}, {64, 64}));
-
-    if (!success) 
-        std::cout << "error while opening animation files\n";
-
-    sf::Sprite hero_down(texture_hero_down);
-    sf::Sprite hero_down2(texture_hero_down2);
-    sf::Sprite hero_up(texture_hero_up);
-    sf::Sprite hero_up2(texture_hero_up2);
-    sf::Sprite hero_right(texture_hero_right);
-    sf::Sprite hero_right2(texture_hero_right2);
-    sf::Sprite hero_left(texture_hero_left);
-    sf::Sprite hero_left2(texture_hero_left2);
-
-    game::Mob hero(hero_down);
-    hero.set_position({1, 1});
+    game::Mob hero;
+    hero.make_sprites();
+    hero.set_sprite(Status_sprite_index::DOWN);
+    //---------------------------
 
     sf::Clock clock;
-    //----------------------------
 
     //----------- view -----------
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({600, 400}));
@@ -155,7 +113,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     int status_sprite = 1;
 
 	while (window.isOpen()) {
-        // drawing and handling key buttons
+        /* Drawing and handling key buttons */
 
         while (std::optional<sf::Event> event = window.pollEvent()) {
             if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
@@ -251,7 +209,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             ctrl_handler.changed = 1;
         }
 
-        /* Render */
+        /* ----- Render ----- */
         window.clear(sf::Color::Black);
 
         /* ------ Map ------- */
@@ -266,33 +224,8 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
-
-            switch (static_cast<Status_sprite_index>(obj->second.sprite_status)) {
-                case Status_sprite_index::UP:
-                    hero.set_sprite(hero_up);
-                    break;
-                case Status_sprite_index::UP2:
-                    hero.set_sprite(hero_up2);
-                    break;
-                case Status_sprite_index::DOWN:
-                    hero.set_sprite(hero_down);
-                    break;
-                case Status_sprite_index::DOWN2:
-                    hero.set_sprite(hero_down2);
-                    break;
-                case Status_sprite_index::RIGHT:
-                    hero.set_sprite(hero_right);
-                    break;
-                case Status_sprite_index::RIGHT2:
-                    hero.set_sprite(hero_right2);
-                    break;
-                case Status_sprite_index::LEFT:
-                    hero.set_sprite(hero_left);
-                    break;
-                case Status_sprite_index::LEFT2:
-                    hero.set_sprite(hero_left2);
-                    break;
-            }
+            
+            hero.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
             window.draw(obj->second); 
 
             hero.set_position(obj->second.getPosition());

@@ -5,6 +5,17 @@
 #include <iostream>
 #include <array>
 
+enum class Status_sprite_index {
+    UP     = 10,
+    UP2    = 11,
+    DOWN   = 20,
+    DOWN2  = 21,
+    RIGHT  = 30,
+    RIGHT2 = 31,
+    LEFT   = 40,
+    LEFT2  = 41,
+};
+
 namespace game {
 
 class control_struct final {
@@ -66,33 +77,87 @@ class game_state_server final {
 
 class Mob {
 
-    sf::Sprite _sprite;
+    std::vector<sf::Sprite> _sprites;
     sf::Vector2f _coords;
-    sf::Texture _texture;
+    sf::Angle _rot;
+    std::array<sf::Texture, 8> _textures;
+    Status_sprite_index _ind;
 
 public:
-
     uint32_t health;
     uint32_t speed;
 
-    Mob() = default;
-    Mob(const sf::Sprite& sprite, uint32_t health = 100) : _sprite(sprite), health(health) {};
+    Mob(uint32_t health = 100) : health(health) {
 
-    void set_graphics(const sf::Sprite& sprite) {
-       
-        _sprite = sprite;
+        bool success = true;
+	    success = success && _textures[0].loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png",
+                                                            false, sf::IntRect({0, 0}, {64, 64}));   
+        success = success && _textures[1].loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png", 
+                                                            false, sf::IntRect({192, 0}, {64, 64}));   
+        success = success && _textures[2].loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
+                                                            false, sf::IntRect({0, 0}, {64, 64})); 
+        success = success && _textures[3].loadFromFile ("Animations/Carry_Run/Carry_Run_Up-Sheet.png", 
+                                                            false, sf::IntRect({192, 0}, {64, 64}));
+        success = success && _textures[4].loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
+                                                            false, sf::IntRect({0, 0}, {64, 64}));
+        success = success && _textures[5].loadFromFile ("Animations/Carry_Run/Carry_Run_Side-Sheet.png", 
+                                                            false, sf::IntRect({192, 0}, {64, 64}));
+        success = success && _textures[6].loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
+                                                            false, sf::IntRect({0, 0}, {64, 64}));   
+        success = success && _textures[7].loadFromFile ("Animations/Carry_Run/Carry_Run_LSide-Sheet.png", 
+                                                        false, sf::IntRect({192, 0}, {64, 64}));
+        if (!success) 
+            std::cout << "error while opening animation files\n";
+    };
+
+    void make_sprites() {
+        for (int i = 0; i < 8; ++i) {
+            sf::Sprite sprite(_textures[i]);
+            _sprites.push_back(sprite);
+        }
     }
     void set_position(sf::Vector2f coords) {
-        _sprite.setPosition(coords);
+        _coords = coords;
     }
-    void set_sprite(sf::Sprite& sprite) {
-        _sprite = sprite;
+    void set_sprite(Status_sprite_index ind) {
+
+        _ind = ind;
     }
     void set_rotation(sf::Angle rot) {
-        _sprite.setRotation(rot);
+        _rot = rot;
     }
     sf::Sprite get_sprite() {
-        return _sprite;
+        sf::Sprite current_sprite = _sprites[0];
+        switch(_ind) {
+            case Status_sprite_index::DOWN:
+                current_sprite = _sprites[0];
+                break;
+            case Status_sprite_index::DOWN2:
+                current_sprite = _sprites[1];
+                break;
+            case Status_sprite_index::UP:
+                current_sprite = _sprites[2];
+                break;
+            case Status_sprite_index::UP2:
+                current_sprite = _sprites[3];
+                break;
+            case Status_sprite_index::RIGHT:
+                current_sprite = _sprites[4];
+                break;
+            case Status_sprite_index::RIGHT2:
+                current_sprite = _sprites[5];
+                break;
+            case Status_sprite_index::LEFT:
+                current_sprite = _sprites[6];
+                break;
+            case Status_sprite_index::LEFT2:
+                current_sprite = _sprites[7];
+                break;
+        }
+        current_sprite.setPosition(_coords);
+        current_sprite.setRotation(_rot);
+
+        return current_sprite;
     }
 };
 
@@ -136,7 +201,7 @@ public:
 class Map {
 
 private:
-    std::vector<sf::Sprite> _maps_blocks;
+    std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
 
 public: 
@@ -155,34 +220,26 @@ public:
             std::cout << "error while opening map file\n";
     }
 
-    std::vector<sf::Sprite> make_map() {
-        
-        std::vector<sf::Sprite> maps_blocks;
+    void make_map() {
 
         for (int i = 0; i < 110; ++i) {
-            sf::Sprite map(_textures[i % 5]);
-            maps_blocks.push_back(map);
+            sf::Sprite sprite(_textures[i % 5]);
+            _sprites.push_back(sprite);
         }
         for (float y = 0; y < 10; ++y) {
             for (float x = 0; x < 10; ++x) {
                 int index = y * 10 + x;
-                maps_blocks[index].setPosition({x * 46, y * 46});
+                _sprites[index].setPosition({x * 46, y * 46});
             }
         }
-
-        _maps_blocks = maps_blocks;
-
-        return maps_blocks;
     }
 
     void render(sf::RenderWindow& window) {
-        std::cout << "size = " << _maps_blocks.size() << '\n';
-        for (auto block : _maps_blocks) {
+        std::cout << "size = " << _sprites.size() << '\n';
+        for (auto block : _sprites) {
             window.draw(block);
         }
-        // window.draw(_maps_blocks[1]);
     }
-
 };
 }
 
