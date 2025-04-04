@@ -203,6 +203,7 @@ class Map {
 private:
     std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
+    uint32_t map_size = 100;
 
 public: 
 
@@ -222,20 +223,19 @@ public:
 
     void make_map() {
 
-        for (int i = 0; i < 110; ++i) {
+        for (int i = 0; i < map_size * map_size; ++i) {
             sf::Sprite sprite(_textures[i % 5]);
             _sprites.push_back(sprite);
         }
-        for (float y = 0; y < 10; ++y) {
-            for (float x = 0; x < 10; ++x) {
-                int index = y * 10 + x;
+        for (float y = 0; y < map_size; ++y) {
+            for (float x = 0; x < map_size; ++x) {
+                int index = y * map_size + x;
                 _sprites[index].setPosition({x * 46, y * 46});
             }
         }
     }
 
     void render(sf::RenderWindow& window) {
-        std::cout << "size = " << _sprites.size() << '\n';
         for (auto block : _sprites) {
             window.draw(block);
         }
