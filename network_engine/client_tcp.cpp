@@ -17,28 +17,25 @@ static sf::Clock clock_fps;
 static sf::Time delta_time;
 
 void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& move_x, int& move_y) {
-    // Проверяем пересечение
+
     if (!player_box.intersects(obstacle))
         return;
 
-    // Рассчитываем глубину проникновения по каждой оси
     float overlap_left = player_box.right() - obstacle.left;
     float overlap_right = obstacle.right() - player_box.left;
     float overlap_top = player_box.bottom() - obstacle.top;
     float overlap_bottom = obstacle.bottom() - player_box.top;
 
-    // Находим минимальное перекрытие по каждой оси
     float min_overlap_x = std::min(overlap_left, overlap_right);
     float min_overlap_y = std::min(overlap_top, overlap_bottom);
 
-    // Определяем направление выталкивания
     float push_x = min_overlap_x * (player_box.left < obstacle.left ? -1 : 1);
     float push_y = min_overlap_y * (player_box.top < obstacle.top ? -1 : 1);
 
-    // Выбираем ось с минимальным перекрытием
     if (std::abs(push_x) < std::abs(push_y)) {
         move_x += push_x;
-    } else {
+    } 
+    else {
         move_y += push_y;
     }
 }
@@ -110,22 +107,22 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
     char tag_value[100] = {};
 
-    //----------- Map -----------
+    /* ------ Map ------- */
     game::Map map("Animations/map/map.png");
     map.make_map();
-    //---------------------------
+    /* ------------------ */
 
-    //----------- Hero -----------
+    /* ------- Hero ------ */
     game::Mob hero;
     hero.make_sprites();
     hero.set_sprite(Status_sprite_index::DOWN);
-    //---------------------------
+    /* ------------------- */
 
     sf::Clock clock;
 
-    //----------- view -----------
+    /* -------- view ------- */
     sf::View view (sf::Vector2f({0, 0}), sf::Vector2f({600, 400}));
-    //----------------------------
+    /* --------------------- */
 
     int move_x_old = 0;
     int move_y_old = 0;
@@ -228,7 +225,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         /* AABB collision check */
         for (auto map_bound : map.map_bounds)
             resolve_collision(hero.mob_bounds, map_bound, move_x, move_y);
-            
+
         if (move_x_old != move_x){
             move_x_old = move_x;
             ctrl_handler.move_x = move_x;
@@ -255,18 +252,25 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
-            
-            hero.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
-            window.draw(obj->second); 
 
-            hero.set_position(obj->second.getPosition());
-            hero.set_rotation(obj->second.getRotation());
-            window.draw(hero.get_sprite());
-
-            /* ---- View ---- */
+            /* ---- Your hero ---- */
             if (index_cli == obj->first) {
+                hero.set_position(obj->second.getPosition());
+                hero.set_rotation(obj->second.getRotation());
+                hero.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
+                window.draw(hero.get_sprite());
+                /* ---- View ---- */
                 view.setCenter(obj->second.getPosition());
                 window.setView(view);
+            } 
+            /* ---- Another hero ---- */
+            else {
+                game::Mob hero_2;
+                hero_2.make_sprites();
+                hero_2.set_position(obj->second.getPosition());
+                hero_2.set_rotation(obj->second.getRotation());
+                hero_2.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
+                window.draw(hero_2.get_sprite());
             }
         }
         window.display();
@@ -297,10 +301,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
             " and port " << server.getRemotePort() << std::endl;
     }
-    /* thread of network module */
+    /* Thread of network module */
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
-    /* main thread of rendering module */
+    /* Main thread of rendering module */
     render_window(ctrl_handler, global_state, player_count, std::stoi(argv[1]));
 
     network_thread.join();    
