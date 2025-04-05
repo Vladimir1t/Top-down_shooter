@@ -1,11 +1,10 @@
+#pragma once
 #include <SFML/Network.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <iostream>
 #include <string>
 #include <list>
-
-#pragma once
 
 #include "game_state.hpp"
 
@@ -41,12 +40,12 @@ public:
 
     void wait_and_handle(game_state_server& global_state) {
         if (_selector.wait(_timeout)) { 
-            //handling all connections
+            // handling all connections
             if (_selector.isReady(_listener)){
                 // accept a new connection
                 sf::TcpSocket client;
                 //_clients.push_back(sf::TcpSocket()); 
-                if (_listener.accept(client) != sf::Socket::Status::Done) { //must not block thread.
+                if (_listener.accept(client) != sf::Socket::Status::Done) { 
                     std::cerr << "Error while accepting client's socket" << std::endl;
                     return;
                 }
@@ -55,7 +54,7 @@ public:
                         " and port " << (client).getRemotePort() << std::endl;
                     _selector.add(client);
                     _clients.push_back(std::move(client)); 
-                    _incoming_messages.emplace_back(); //adding new message packet to same index as created client
+                    _incoming_messages.emplace_back(); // adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
 
                     global_state.add_player();
