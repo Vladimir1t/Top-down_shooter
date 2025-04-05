@@ -12,6 +12,11 @@
 
 ***Top-down Shooter*** (C++ network game) - простая 2d игра с графикой SFML и сетевым интерфейсом.
 
+Technologies are used:
+- SFML Network 
+- SRML Graphics
+- AABB collision
+
 Рассмотрим поподробнее структуру проекта.
 
 ## Архитектура проекта
