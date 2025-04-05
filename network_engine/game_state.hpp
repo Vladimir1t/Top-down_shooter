@@ -1,9 +1,11 @@
+#pragma once
 #include <SFML/Network.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
 #include <iostream>
 #include <array>
+#include <vector>
 
 enum class Status_sprite_index {
     UP     = 10,
@@ -18,6 +20,55 @@ enum class Status_sprite_index {
 
 namespace game {
 
+class AABB {
+public:
+    float left;
+    float top;
+    float width;
+    float height;
+    
+    AABB(float left, float top, float width, float height) 
+        : left(left), top(top), width(width), height(height) {}
+        
+    AABB() = default;
+        
+    void set_bounds(float left_, float top_, float width_, float height_) {
+        left = left_;
+        top = top_;
+        width = width_;
+        height = height_;
+    }
+
+    bool contains(const sf::Vector2f& point) const {
+        return (point.x >= left) && 
+               (point.x <= left + width) &&
+               (point.y >= top) &&
+               (point.y <= top + height);
+    }
+    
+    bool intersects(const AABB& other) const {
+        return (left < other.left + other.width) &&
+               (left + width > other.left) &&
+               (top < other.top + other.height) &&
+               (top + height > other.top);
+    }
+    
+    void clamp(sf::Vector2f& position, const sf::Vector2f& size) const {
+        position.x = std::max(left, std::min(position.x, left + width - size.x));
+        position.y = std::max(top, std::min(position.y, top + height - size.y));
+    }
+    
+    float right() const { 
+        return left + width; 
+    }
+    float bottom() const { 
+        return top + height; 
+    }
+    sf::Vector2f center() const { 
+        return {left + width/2, top + height/2}; 
+    }
+};
+
 class control_struct final {
 public:
     int move_x;
@@ -27,7 +78,9 @@ public:
     int sprite_status;
 };
 
-class object: public sf::RectangleShape{
+class object: public sf::RectangleShape {
+
+
     sf::Vector2f _velocity_coeff;
     float _rotation_coeff;
 
@@ -35,6 +88,10 @@ class object: public sf::RectangleShape{
     int _rotation;
 
 public:
+    object() { 
+        /* Start coords */
+        move({100, 100}); 
+    }
     int sprite_status;
 
     void update() {
@@ -58,24 +115,24 @@ public:
 };
 
 class game_state_server final {
-    public:
-        uint64_t next_player_unique_id = 0;
-        std::vector<std::pair<uint64_t, object>> player_objects;
+public:
+    uint64_t next_player_unique_id = 0;
+    std::vector<std::pair<uint64_t, object>> player_objects;
 
-        void add_player(){
-            player_objects.emplace_back();
-            player_objects.back().first = next_player_unique_id++;
-            player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
-        }
+    void add_player() {
+        player_objects.emplace_back();
+        player_objects.back().first = next_player_unique_id++;
+        player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
+    }
 
-        void update_state(){
-            for(int i = 0; i < player_objects.size(); ++i){
-                player_objects[i].second.update();
-            }
+    void update_state() {
+        for(int i = 0; i < player_objects.size(); ++i){
+            player_objects[i].second.update();
         }
+    }
 };
 
-class Mob {
+class Mob final {
 
     std::vector<sf::Sprite> _sprites;
     sf::Vector2f _coords;
@@ -86,6 +143,7 @@ class Mob {
 public:
     uint32_t health;
     uint32_t speed;
+    AABB mob_bounds;
 
     Mob(uint32_t health = 100) : health(health) {
 
@@ -118,9 +176,9 @@ public:
     }
     void set_position(sf::Vector2f coords) {
         _coords = coords;
+        mob_bounds.set_bounds(_coords.x - 32, _coords.y - 32, 64, 64);
     }
     void set_sprite(Status_sprite_index ind) {
-
         _ind = ind;
     }
     void set_rotation(sf::Angle rot) {
@@ -161,7 +219,7 @@ public:
     }
 };
 
-class window_info {
+class window_info final {
 
     sf::Font _font;
     float _fps;
@@ -198,14 +256,16 @@ public:
     }
 };
 
-class Map {
+class Map final {
 
 private:
     std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
     uint32_t map_size = 100;
+    uint32_t map_block_size = 64;
 
 public: 
+    std::array<AABB, 4> map_bounds;
 
     Map() = default;
 
@@ -233,6 +293,11 @@ public:
                 _sprites[index].setPosition({x * 46, y * 46});
             }
         }
+        /* Bounds of map */
+        map_bounds[0].set_bounds(-60, -60, map_size * map_block_size + 60, 5);
+        map_bounds[1].set_bounds(-60, -60, 5, map_size * map_block_size + 60);
+        map_bounds[2].set_bounds(-60, map_size * map_block_size, map_size * map_block_size + 60, 5);
+        map_bounds[3].set_bounds(map_size * map_block_size, 0, 5, map_size * map_block_size + 60);
     }
 
     void render(sf::RenderWindow& window) {

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <array>
 #include <thread>
 #include <mutex>
 #include <cstdlib>
@@ -14,6 +15,33 @@ static std::mutex state_mutex;
 static int index_cli;
 static sf::Clock clock_fps;
 static sf::Time delta_time;
+
+void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& move_x, int& move_y) {
+    // Проверяем пересечение
+    if (!player_box.intersects(obstacle))
+        return;
+
+    // Рассчитываем глубину проникновения по каждой оси
+    float overlap_left = player_box.right() - obstacle.left;
+    float overlap_right = obstacle.right() - player_box.left;
+    float overlap_top = player_box.bottom() - obstacle.top;
+    float overlap_bottom = obstacle.bottom() - player_box.top;
+
+    // Находим минимальное перекрытие по каждой оси
+    float min_overlap_x = std::min(overlap_left, overlap_right);
+    float min_overlap_y = std::min(overlap_top, overlap_bottom);
+
+    // Определяем направление выталкивания
+    float push_x = min_overlap_x * (player_box.left < obstacle.left ? -1 : 1);
+    float push_y = min_overlap_y * (player_box.top < obstacle.top ? -1 : 1);
+
+    // Выбираем ось с минимальным перекрытием
+    if (std::abs(push_x) < std::abs(push_y)) {
+        move_x += push_x;
+    } else {
+        move_y += push_y;
+    }
+}
 
 static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
     sf::TcpSocket& server, ushort& player_count) {
@@ -197,7 +225,10 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         move_x = move_x_plus - move_x_minus;
         move_y = move_y_plus - move_y_minus;
-
+        /* AABB collision check */
+        for (auto map_bound : map.map_bounds)
+            resolve_collision(hero.mob_bounds, map_bound, move_x, move_y);
+            
         if (move_x_old != move_x){
             move_x_old = move_x;
             ctrl_handler.move_x = move_x;
