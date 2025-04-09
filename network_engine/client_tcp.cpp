@@ -85,7 +85,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     }
 }
 
-static void change_position_sprite(sf::Clock& clock, int& status_sprite, game::control_struct& ctrl_handler, 
+static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::control_struct& ctrl_handler, 
     Status_sprite_index sprite_index) {
 
     if (status_sprite == 1) {
@@ -145,7 +145,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 switch (key_pressed->code) {
                     case sf::Keyboard::Key::D:
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
-                            change_position_sprite(clock, status_sprite, 
+                            change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::RIGHT);
                             ctrl_handler.changed = 1;
                         }
@@ -154,7 +154,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
                     case sf::Keyboard::Key::A: 
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
-                            change_position_sprite(clock, status_sprite, 
+                            change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::LEFT);
                             ctrl_handler.changed = 1;
                         }
@@ -163,7 +163,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
                     case sf::Keyboard::Key::W: 
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
-                            change_position_sprite(clock, status_sprite, 
+                            change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::UP);
                             ctrl_handler.changed = 1;
                         }
@@ -172,7 +172,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
                     case sf::Keyboard::Key::S: 
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
-                            change_position_sprite(clock, status_sprite, 
+                            change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::DOWN);
                             ctrl_handler.changed = 1;
                         }

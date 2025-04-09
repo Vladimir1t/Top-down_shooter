@@ -16,6 +16,7 @@ Technologies are used:
 - SFML Network 
 - SRML Graphics
 - AABB collision
+- Threads
 
 Рассмотрим поподробнее структуру проекта.
 
@@ -43,7 +44,7 @@ Technologies are used:
 
 ---
 ![Пример графики](Animations/example.png)
-- Пример рендеринга игры (карта, fps, здоровье игрока и сами персонажи)ю
+- Пример рендеринга игры (карта, fps, здоровье игрока и сами персонажи)
 ---
 
 ## Как собирать 
