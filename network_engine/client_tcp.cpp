@@ -16,30 +16,6 @@ static int index_cli;
 static sf::Clock clock_fps;
 static sf::Time delta_time;
 
-void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& move_x, int& move_y) {
-
-    if (!player_box.intersects(obstacle))
-        return;
-
-    float overlap_left = player_box.right() - obstacle.left;
-    float overlap_right = obstacle.right() - player_box.left;
-    float overlap_top = player_box.bottom() - obstacle.top;
-    float overlap_bottom = obstacle.bottom() - player_box.top;
-
-    float min_overlap_x = std::min(overlap_left, overlap_right);
-    float min_overlap_y = std::min(overlap_top, overlap_bottom);
-
-    float push_x = min_overlap_x * (player_box.left < obstacle.left ? -1 : 1);
-    float push_y = min_overlap_y * (player_box.top < obstacle.top ? -1 : 1);
-
-    if (std::abs(push_x) < std::abs(push_y)) {
-        move_x += push_x;
-    } 
-    else {
-        move_y += push_y;
-    }
-}
-
 static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
     sf::TcpSocket& server, ushort& player_count) {
 
@@ -100,12 +76,11 @@ static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::con
 }
 
 static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state,
-    ushort& player_count, int index_cli) {
+    ushort& player_count, size_t index_cli) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
-    char tag_value[100] = {};
 
     /* ------ Map ------- */
     game::Map map("Animations/map/map.png");
@@ -222,9 +197,10 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         move_x = move_x_plus - move_x_minus;
         move_y = move_y_plus - move_y_minus;
+
         /* AABB collision check */
-        for (auto map_bound : map.map_bounds)
-            resolve_collision(hero.mob_bounds, map_bound, move_x, move_y);
+        // for (auto map_bound : map.map_bounds)
+        //     resolve_collision(hero.mob_bounds, map_bound, move_x, move_y);
 
         if (move_x_old != move_x){
             move_x_old = move_x;
@@ -253,6 +229,13 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
 
+            sf::RectangleShape rect{{obj->second._hitbox.width, obj->second._hitbox.height}};
+            rect.setOutlineThickness(1);
+            rect.setOutlineColor({255, 0, 0});
+            rect.setFillColor({0,0,0});
+            rect.move(obj->second.getPosition());
+            window.draw(rect);
+
             /* ---- Your hero ---- */
             if (index_cli == obj->first) {
                 hero.set_position(obj->second.getPosition());
@@ -272,6 +255,9 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 hero_2.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
                 window.draw(hero_2.get_sprite());
             }
+
+
+            
         }
         window.display();
 	}

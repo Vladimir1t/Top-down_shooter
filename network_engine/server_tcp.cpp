@@ -11,6 +11,10 @@
 #include "TCP_server.hpp"
 
 int Receive() {
+
+    game::game_state_server global_state;
+    global_state.create_from_settings();
+
     sf::Time timeout = sf::milliseconds(15);
     /* Set port of tcp server */
     game::TCP_server server{53000, timeout};
@@ -18,14 +22,14 @@ int Receive() {
         return -1;
     };
 
-    game::game_state_server global_state;
-
     while (true) {
         server.wait_and_handle(global_state);
         // std::cout << "waiting done" << std::endl;
 
         server.read_packets(global_state);
         // std::cout << "packets read" << std::endl;
+
+        server.check_collisions(global_state);
 
         server.update_state(global_state);
         // std::cout << "state updated" << std::endl;

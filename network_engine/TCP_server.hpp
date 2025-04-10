@@ -10,6 +10,35 @@
 
 namespace game {
 
+void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& move_x, int& move_y) {
+
+    if (!player_box.intersects(obstacle)){
+        std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
+                    << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';            
+        return;
+    }
+
+    float overlap_x = player_box.right() - obstacle.x;
+    float overlap_right = obstacle.right() - player_box.x;
+    float overlap_y = player_box.bottom() - obstacle.y;
+    float overlap_bottom = obstacle.bottom() - player_box.y;
+
+    float min_overlap_x = std::min(overlap_x, overlap_right);
+    float min_overlap_y = std::min(overlap_y, overlap_bottom);
+
+    float push_x = min_overlap_x * (player_box.x < obstacle.x ? -1 : 1);
+    float push_y = min_overlap_y * (player_box.y < obstacle.y ? -1 : 1);
+
+    std::cout << "push_x" << push_x << "push_y" << push_y << std::endl;
+
+    if (std::abs(push_x) < std::abs(push_y)) {
+        move_x += push_x;
+    } 
+    else {
+        move_y += push_y;
+    }
+}
+
 class TCP_server final {
     
 private:
@@ -78,7 +107,7 @@ public:
 
     void read_packets(game_state_server& global_state) {
         int move_x, move_y, rotate, sprite_status;
-        for (int i = 0; i < _clients.size(); ++i) {
+        for (size_t i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
                 _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
 
@@ -89,6 +118,17 @@ public:
                 _incoming_messages[i].clear();
             }
         }
+    }
+
+    void check_collisions(game_state_server& global_state){
+        for(auto& [index, player]: global_state.player_objects){
+            std::cout << "wall check for player " << index << std::endl;
+            for(auto &wall: global_state.walls){
+                std::cout << "wall\n";
+                resolve_collision(player._hitbox, wall, player._velocity.x, player._velocity.y);
+            }
+        }
+        
     }
 
     void update_state(game_state_server& global_state){
@@ -138,7 +178,7 @@ public:
     }
 
     void clear_outcome() {
-        for (int i = 0; i < _outcoming_messages.size(); ++i) {
+        for (size_t i = 0; i < _outcoming_messages.size(); ++i) {
             _outcoming_messages[i].clear();
         }
     }

@@ -7,6 +7,8 @@
 #include <array>
 #include <vector>
 
+#include "game_objects.hpp"
+
 enum class Status_sprite_index {
     UP     = 10,
     UP2    = 11,
@@ -20,54 +22,6 @@ enum class Status_sprite_index {
 
 namespace game {
 
-class AABB {
-public:
-    float left;
-    float top;
-    float width;
-    float height;
-    
-    AABB(float left, float top, float width, float height) 
-        : left(left), top(top), width(width), height(height) {}
-        
-    AABB() = default;
-        
-    void set_bounds(float left_, float top_, float width_, float height_) {
-        left = left_;
-        top = top_;
-        width = width_;
-        height = height_;
-    }
-
-    bool contains(const sf::Vector2f& point) const {
-        return (point.x >= left) && 
-               (point.x <= left + width) &&
-               (point.y >= top) &&
-               (point.y <= top + height);
-    }
-    
-    bool intersects(const AABB& other) const {
-        return (left < other.left + other.width) &&
-               (left + width > other.left) &&
-               (top < other.top + other.height) &&
-               (top + height > other.top);
-    }
-    
-    void clamp(sf::Vector2f& position, const sf::Vector2f& size) const {
-        position.x = std::max(left, std::min(position.x, left + width - size.x));
-        position.y = std::max(top, std::min(position.y, top + height - size.y));
-    }
-    
-    float right() const { 
-        return left + width; 
-    }
-    float bottom() const { 
-        return top + height; 
-    }
-    sf::Vector2f center() const { 
-        return {left + width/2, top + height/2}; 
-    }
-};
 
 class control_struct final {
 public:
@@ -84,15 +38,23 @@ class object: public sf::RectangleShape {
     sf::Vector2f _velocity_coeff;
     float _rotation_coeff;
 
+    public:
     sf::Vector2i _velocity;
     int _rotation;
 
-public:
-    object() { 
+    AABB _hitbox;
+
+    object(): _hitbox({0, 0, 64, 64}) { 
         /* Start coords */
         move({100, 100}); 
     }
     int sprite_status;
+
+    void move(sf::Vector2f offset){
+        object::RectangleShape::move(offset);
+        _hitbox.x += offset.x;
+        _hitbox.y += offset.y;
+    }
 
     void update() {
         move({_velocity_coeff.x * _velocity.x, _velocity_coeff.y * _velocity.y});
@@ -101,6 +63,7 @@ public:
 
     void set_coeff_velocity_and_rot(sf::Vector2f velocity_coeff, float rotation_coeff){
         _velocity_coeff = velocity_coeff;
+        _rotation_coeff = rotation_coeff;
     }
 
     void set_velocity_and_rot(sf::Vector2i new_velocity, int new_rotation){
@@ -118,6 +81,18 @@ class game_state_server final {
 public:
     uint64_t next_player_unique_id = 0;
     std::vector<std::pair<uint64_t, object>> player_objects;
+    std::array<AABB, 4> walls;
+
+    void create_from_settings(){
+        //magick nubers right now -> need to read from file
+        uint32_t map_size = 100;
+        uint32_t map_block_size = 64;
+
+        walls[0].set_bounds(-60, -60, map_size * map_block_size + 60, 5);
+        walls[1].set_bounds(-60, -60, 5, map_size * map_block_size + 60);
+        walls[2].set_bounds(-60, map_size * map_block_size, map_size * map_block_size + 60, 5);
+        walls[3].set_bounds(map_size * map_block_size, 0, 5, map_size * map_block_size + 60);
+    };
 
     void add_player() {
         player_objects.emplace_back();
@@ -126,7 +101,7 @@ public:
     }
 
     void update_state() {
-        for(int i = 0; i < player_objects.size(); ++i){
+        for(size_t i = 0; i < player_objects.size(); ++i){
             player_objects[i].second.update();
         }
     }
@@ -285,7 +260,7 @@ public:
 
     void make_map() {
 
-        for (int i = 0; i < map_size * map_size; ++i) {
+        for (size_t i = 0; i < map_size * map_size; ++i) {
             sf::Sprite sprite(_textures[i % 5]);
             _sprites.push_back(sprite);
         }
@@ -305,6 +280,11 @@ public:
     void render(sf::RenderWindow& window) {
         for (auto block : _sprites) {
             window.draw(block);
+        }
+        for(int i = 0; i < 4; i++){
+            sf::RectangleShape rect{{map_bounds[i].width, map_bounds[i].height}};
+            rect.move({map_bounds[i].x, map_bounds[i].y});
+            window.draw(rect);
         }
     }
 };
