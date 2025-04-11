@@ -14,7 +14,7 @@ void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float
 
     if (!player_box.intersects(obstacle)){
         // std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
-        //             << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';            
+        //             << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
         return;
     }
 
@@ -123,7 +123,6 @@ public:
             player._velocity_external = {0, 0};
             // std::cout << "wall check for player " << index << std::endl;
             for(auto &wall: global_state.walls){
-                std::cout << "wall\n";
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
         }
