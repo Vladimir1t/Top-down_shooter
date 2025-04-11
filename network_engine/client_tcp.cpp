@@ -82,11 +82,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     window.setVerticalSyncEnabled(true);
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
 
-    /* ------ Map ------- */
-    game::Map map("Animations/map/map.png");
-    map.make_map();
-    /* ------------------ */
-
     /* ------- Hero ------ */
     game::Mob hero;
     hero.make_sprites();
@@ -198,10 +193,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         move_x = move_x_plus - move_x_minus;
         move_y = move_y_plus - move_y_minus;
 
-        /* AABB collision check */
-        // for (auto map_bound : map.map_bounds)
-        //     resolve_collision(hero.mob_bounds, map_bound, move_x, move_y);
-
         if (move_x_old != move_x){
             move_x_old = move_x;
             ctrl_handler.move_x = move_x;
@@ -215,11 +206,9 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         /* ----- Render ----- */
         window.clear(sf::Color::Black);
-
-        /* ------ Map ------- */
-        map.render(window);
-        /* ------------------ */
         
+        global_state.global_map.render(window);
+
         /* ------ FPS ------- */
         game::window_info fps_info("open-sans/OpenSans-Bold.ttf");
         fps_info.update_info(delta_time.asMilliseconds(), hero.health);
@@ -255,12 +244,21 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 hero_2.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
                 window.draw(hero_2.get_sprite());
             }
-
-
-            
         }
         window.display();
 	}
+}
+
+//recieving initial information
+static void get_initial_data(game::game_state_client& global_state, sf::TcpSocket& server){
+    sf::Packet incoming_state;
+
+    if (server.receive(incoming_state) != sf::Socket::Status::Done) {
+        std::cerr << "Error while recieving initial information" << std::endl;
+    }
+    else {
+        global_state.global_map.make_walls(incoming_state);
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -287,6 +285,13 @@ int main(int argc, char* argv[]) {
         std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
             " and port " << server.getRemotePort() << std::endl;
     }
+
+    //load map textures
+    global_state.global_map.make_textures("Animations/map/map.png");
+    global_state.global_map.make_map();
+
+    get_initial_data(global_state, server);
+
     /* Thread of network module */
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
