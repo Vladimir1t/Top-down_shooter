@@ -73,26 +73,151 @@ class object: public sf::RectangleShape {
     }
 };
 
+class Wall: public AABB{
+    public:
+    size_t id_;
+
+    Wall(size_t id, float x, float y, float width, float height) {
+        AABB::set_bounds(x, y, width, height);
+        id_ = id;
+    };
+};
+
+class window_info final {
+    sf::Font _font;
+    float _fps;
+    std::string _string_info;
+
+public:
+
+    window_info() = default;
+
+    window_info(std::string file_name) {
+        if (!_font.openFromFile(file_name)) {
+            std::cerr << "reading file error\n";
+        }
+    }
+
+    void update_info(float delta_time, int health) {
+        _fps = 1000.0f / delta_time;
+        _string_info = "FPS = " + std::to_string(_fps) + "\nHealth = " + std::to_string(health);
+    }
+
+    void render(sf::RenderWindow& window, sf::View& view) {
+        sf::Text frame_rate_text(_font);
+        frame_rate_text.setString(_string_info);
+        frame_rate_text.setCharacterSize(10); 
+        frame_rate_text.setFillColor(sf::Color::White); 
+       
+        sf::Vector2f view_center = view.getCenter();
+        sf::Vector2f view_size = view.getSize();
+
+        frame_rate_text.setPosition({view_center.x - view_size.x / 2 + 20,
+                                     view_center.y - view_size.y / 2 + 20});
+
+        window.draw(frame_rate_text);
+    }
+};
+
+class Map final {
+
+private:
+    std::vector<sf::Sprite> _sprites;
+    std::array<sf::Texture, 5> _textures;
+    uint32_t map_size = 100;
+    uint32_t map_block_size = 64;
+
+public: 
+    std::vector<Wall> walls;
+
+    void make_textures(std::string file_name) {
+        bool success = true;
+        /* wood */
+        success = success && _textures[0].loadFromFile (file_name, false, sf::IntRect({224, 0}, {48, 48}));   
+        success = success && _textures[1].loadFromFile (file_name, false, sf::IntRect({272, 0}, {48, 48}));   
+        /* stone */
+        success = success && _textures[2].loadFromFile (file_name, false, sf::IntRect({64, 0}, {48, 48}));  
+        success = success && _textures[3].loadFromFile (file_name, false, sf::IntRect({0, 304}, {48, 48}));  
+        success = success && _textures[4].loadFromFile (file_name, false, sf::IntRect({112, 0}, {48, 48}));  
+
+        if (!success) 
+            std::cout << "error while opening map file\n";
+    }
+
+    void make_map() {
+
+        for (size_t i = 0; i < map_size * map_size; ++i) {
+            sf::Sprite sprite(_textures[i % 5]);
+            _sprites.push_back(sprite);
+        }
+        for (float y = 0; y < map_size; ++y) {
+            for (float x = 0; x < map_size; ++x) {
+                int index = y * map_size + x;
+                _sprites[index].setPosition({x * 46, y * 46});
+            }
+        }
+    }
+
+    void make_walls(sf::Packet message){
+        /* Bounds of map */
+        size_t wall_count;
+        
+        size_t id;
+        float x, y, width, height;
+
+        message >> wall_count;
+        walls.reserve(wall_count);
+
+        for(size_t i = 0; i < wall_count; ++i){
+            message >> id >> x >> y >> width >> height;
+            std::cout << "wall: " << id << ' ' << x << ' ' << ' ' << y << ' ' << width << ' ' << height << std::endl;
+
+            game::Wall w = {id, x, y, width, height};
+            walls.push_back(w);
+        }
+    }
+
+    void render(sf::RenderWindow& window) const {
+        for (auto block : _sprites) {
+            window.draw(block);
+        }
+        for(auto& x: walls){
+            sf::RectangleShape rect{{x.width, x.height}};
+            rect.setFillColor({255,255,255});
+            rect.move({x.x, x.y});
+            window.draw(rect);
+        }
+    }
+};
+
 class game_state_client final {
 public:
     std::unordered_map<uint64_t, object> player_objects;
+    Map global_map;  
 };
 
 class game_state_server final {
 public:
     uint64_t next_player_unique_id = 0;
     std::vector<std::pair<uint64_t, object>> player_objects;
-    std::array<AABB, 4> walls;
+    std::vector<Wall> walls;
 
     void create_from_settings(){
         //magick nubers right now -> need to read from file
         uint32_t map_size = 100;
-        uint32_t map_block_size = 64;
+        float map_block_size = 64;
 
-        walls[0].set_bounds(-60, -60, map_size * map_block_size + 60, 5);
-        walls[1].set_bounds(-60, -60, 5, map_size * map_block_size + 60);
-        walls[2].set_bounds(-60, map_size * map_block_size, map_size * map_block_size + 60, 5);
-        walls[3].set_bounds(map_size * map_block_size, 0, 5, map_size * map_block_size + 60);
+        Wall w = {0, 0, 0, map_size * map_block_size + 60, 5};
+        walls.push_back(w);
+
+        w = {0, 0, 0, 5, map_size * map_block_size + 60};
+        walls.push_back(w);
+
+        w = {0, -60, map_size * map_block_size, map_size * map_block_size + 60, 5};
+        walls.push_back(w);
+
+        w = {0, map_size * map_block_size, 0, 5, map_size * map_block_size + 60};
+        walls.push_back(w);
     };
 
     void add_player() {
@@ -149,17 +274,17 @@ public:
             sf::Sprite sprite(_textures[i]);
             _sprites.push_back(sprite);
         }
-    }
+    };
     void set_position(sf::Vector2f coords) {
         _coords = coords;
         mob_bounds.set_bounds(_coords.x - 32, _coords.y - 32, 64, 64);
-    }
+    };
     void set_sprite(Status_sprite_index ind) {
         _ind = ind;
-    }
+    };
     void set_rotation(sf::Angle rot) {
         _rot = rot;
-    }
+    };
     sf::Sprite get_sprite() {
         sf::Sprite current_sprite = _sprites[0];
         switch(_ind) {
@@ -195,99 +320,9 @@ public:
     }
 };
 
-class window_info final {
 
-    sf::Font _font;
-    float _fps;
-    std::string _string_info;
 
-public:
 
-    window_info() = default;
 
-    window_info(std::string file_name) {
-        if (!_font.openFromFile(file_name)) {
-            std::cerr << "reading file error\n";
-        }
-    }
-
-    void update_info(float delta_time, int health) {
-        _fps = 1000.0f / delta_time;
-        _string_info = "FPS = " + std::to_string(_fps) + "\nHealth = " + std::to_string(health);
-    }
-
-    void render(sf::RenderWindow& window, sf::View& view) {
-        sf::Text frame_rate_text(_font);
-        frame_rate_text.setString(_string_info);
-        frame_rate_text.setCharacterSize(10); 
-        frame_rate_text.setFillColor(sf::Color::White); 
-       
-        sf::Vector2f view_center = view.getCenter();
-        sf::Vector2f view_size = view.getSize();
-
-        frame_rate_text.setPosition({view_center.x - view_size.x / 2 + 20,
-                                     view_center.y - view_size.y / 2 + 20});
-
-        window.draw(frame_rate_text);
-    }
-};
-
-class Map final {
-
-private:
-    std::vector<sf::Sprite> _sprites;
-    std::array<sf::Texture, 5> _textures;
-    uint32_t map_size = 100;
-    uint32_t map_block_size = 64;
-
-public: 
-    std::array<AABB, 4> map_bounds;
-
-    Map() = default;
-
-    Map(std::string file_name) {
-        bool success = true;
-        /* wood */
-        success = success && _textures[0].loadFromFile (file_name, false, sf::IntRect({224, 0}, {48, 48}));   
-        success = success && _textures[1].loadFromFile (file_name, false, sf::IntRect({272, 0}, {48, 48}));   
-        /* stone */
-        success = success && _textures[2].loadFromFile (file_name, false, sf::IntRect({64, 0}, {48, 48}));  
-        success = success && _textures[3].loadFromFile (file_name, false, sf::IntRect({0, 304}, {48, 48}));  
-        success = success && _textures[4].loadFromFile (file_name, false, sf::IntRect({112, 0}, {48, 48}));  
-
-        if (!success) 
-            std::cout << "error while opening map file\n";
-    }
-
-    void make_map() {
-
-        for (size_t i = 0; i < map_size * map_size; ++i) {
-            sf::Sprite sprite(_textures[i % 5]);
-            _sprites.push_back(sprite);
-        }
-        for (float y = 0; y < map_size; ++y) {
-            for (float x = 0; x < map_size; ++x) {
-                int index = y * map_size + x;
-                _sprites[index].setPosition({x * 46, y * 46});
-            }
-        }
-        /* Bounds of map */
-        map_bounds[0].set_bounds(-60, -60, map_size * map_block_size + 60, 5);
-        map_bounds[1].set_bounds(-60, -60, 5, map_size * map_block_size + 60);
-        map_bounds[2].set_bounds(-60, map_size * map_block_size, map_size * map_block_size + 60, 5);
-        map_bounds[3].set_bounds(map_size * map_block_size, 0, 5, map_size * map_block_size + 60);
-    }
-
-    void render(sf::RenderWindow& window) {
-        for (auto block : _sprites) {
-            window.draw(block);
-        }
-        for(int i = 0; i < 4; i++){
-            sf::RectangleShape rect{{map_bounds[i].width, map_bounds[i].height}};
-            rect.move({map_bounds[i].x, map_bounds[i].y});
-            window.draw(rect);
-        }
-    }
-};
 }
 

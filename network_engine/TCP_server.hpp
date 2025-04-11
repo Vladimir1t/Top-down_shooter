@@ -84,6 +84,12 @@ public:
                     _incoming_messages.emplace_back(); // adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
 
+                    //creating starting message for each client
+                    _outcoming_messages.back() << global_state.walls.size();
+                    for(auto& w: global_state.walls){
+                        _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
+                    }
+
                     global_state.add_player();
                 }
             }
@@ -121,7 +127,6 @@ public:
     void check_collisions(game_state_server& global_state){
         for(auto& [index, player]: global_state.player_objects){
             player._velocity_external = {0, 0};
-            // std::cout << "wall check for player " << index << std::endl;
             for(auto &wall: global_state.walls){
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
