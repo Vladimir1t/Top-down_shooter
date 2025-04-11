@@ -14,7 +14,7 @@
 
 Technologies are used:
 - SFML Network 
-- SRML Graphics
+- SFML Graphics
 - AABB collision
 - Threads
 

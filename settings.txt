@@ -1,8 +1,0 @@
-#file with settnigs
-#need to be parced by server and client before game starts
-#contains:
-
-#object class
-#unique object id (name)
-#path to sprites (need to be uniform for all objects of one class, or speccially marked)
-#any other internal settings

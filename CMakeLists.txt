@@ -7,10 +7,13 @@ project(MySFMLApp)
 # ---------------------------------------
 # modify if necessary
 #   for Linux:
-set(SFML_INCLUDE_DIR /usr/local/include) # Path to SFML headers
-message(STATUS "SFML_DIR: ${SFML_DIR}")
-message(STATUS "SFML_INCLUDE_DIR: ${SFML_INCLUDE_DIR}")
-message(STATUS "SFML_LIBRARIES: ${SFML_LIBRARIES}")
+if(UNIX)
+    set(SFML_INCLUDE_DIR /usr/local/include) # Path to SFML headers
+    message(STATUS "SFML_DIR: ${SFML_DIR}")
+    message(STATUS "SFML_INCLUDE_DIR: ${SFML_INCLUDE_DIR}")
+    message(STATUS "SFML_LIBRARIES: ${SFML_LIBRARIES}")
+endif(UNIX)
+
 #   for MacOS:
 # set(SFML_DIR "/opt/homebrew/Cellar/sfml/3.0.0_1/lib/cmake/SFML")
 # find_package(SFML 3.0 COMPONENTS Graphics Window System Network REQUIRED)
@@ -52,5 +55,6 @@ add_library(lib_client STATIC ${CLIENT_FILES})
 target_link_libraries(client lib_client sfml-graphics sfml-window sfml-system sfml-network)
 target_link_libraries(server lib_server sfml-graphics sfml-window sfml-system sfml-network)
 
+#To configure cmake and build project
 # cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
 # cmake --build build
