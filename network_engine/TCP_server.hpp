@@ -10,11 +10,11 @@
 
 namespace game {
 
-void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& move_x, int& move_y) {
+void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float& move_x, float& move_y) {
 
     if (!player_box.intersects(obstacle)){
-        std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
-                    << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';            
+        // std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
+        //             << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';            
         return;
     }
 
@@ -29,13 +29,11 @@ void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, int& 
     float push_x = min_overlap_x * (player_box.x < obstacle.x ? -1 : 1);
     float push_y = min_overlap_y * (player_box.y < obstacle.y ? -1 : 1);
 
-    std::cout << "push_x" << push_x << "push_y" << push_y << std::endl;
-
     if (std::abs(push_x) < std::abs(push_y)) {
-        move_x += push_x;
+        move_x = push_x;
     } 
     else {
-        move_y += push_y;
+        move_y = push_y;
     }
 }
 
@@ -113,7 +111,7 @@ public:
 
                 std::cout << i << ": got message: x: " << move_x << " y: "
                      << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
-                global_state.player_objects[i].second.set_velocity_and_rot({move_x, move_y}, rotate);
+                global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
                 global_state.player_objects[i].second.sprite_status = sprite_status;
                 _incoming_messages[i].clear();
             }
@@ -122,10 +120,11 @@ public:
 
     void check_collisions(game_state_server& global_state){
         for(auto& [index, player]: global_state.player_objects){
-            std::cout << "wall check for player " << index << std::endl;
+            player._velocity_external = {0, 0};
+            // std::cout << "wall check for player " << index << std::endl;
             for(auto &wall: global_state.walls){
                 std::cout << "wall\n";
-                resolve_collision(player._hitbox, wall, player._velocity.x, player._velocity.y);
+                resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
         }
         

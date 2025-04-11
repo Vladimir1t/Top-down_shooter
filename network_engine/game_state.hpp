@@ -39,7 +39,8 @@ class object: public sf::RectangleShape {
     float _rotation_coeff;
 
     public:
-    sf::Vector2i _velocity;
+    sf::Vector2f _velocity_external; //all external factors modify this
+    sf::Vector2f _velocity_internal; //velocity from internal movement 
     int _rotation;
 
     AABB _hitbox;
@@ -57,7 +58,7 @@ class object: public sf::RectangleShape {
     }
 
     void update() {
-        move({_velocity_coeff.x * _velocity.x, _velocity_coeff.y * _velocity.y});
+        move({_velocity_coeff.x * (_velocity_internal.x + _velocity_external.x), _velocity_coeff.y * (_velocity_internal.y + _velocity_external.y)});
         rotate(sf::radians(_rotation_coeff * _rotation));
     }
 
@@ -66,8 +67,8 @@ class object: public sf::RectangleShape {
         _rotation_coeff = rotation_coeff;
     }
 
-    void set_velocity_and_rot(sf::Vector2i new_velocity, int new_rotation){
-        _velocity = new_velocity;
+    void set_internal_velocity_and_rot(sf::Vector2f new_velocity, int new_rotation){
+        _velocity_internal = new_velocity;
         _rotation = new_rotation;
     }
 };
