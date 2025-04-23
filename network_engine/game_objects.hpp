@@ -90,5 +90,4 @@ public:
         frame_counter++;
     };
 };
-
-};
+}

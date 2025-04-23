@@ -75,9 +75,9 @@ class object: public sf::RectangleShape {
 
 class Wall: public AABB{
     public:
-    size_t id_;
+    uint32_t id_;
 
-    Wall(size_t id, float x, float y, float width, float height) {
+    Wall(uint32_t id, float x, float y, float width, float height) {
         AABB::set_bounds(x, y, width, height);
         id_ = id;
     };
@@ -158,11 +158,11 @@ public:
         }
     }
 
-    void make_walls(sf::Packet message){
+    void make_walls(sf::Packet& message){
         /* Bounds of map */
-        size_t wall_count;
+        uint32_t wall_count;
         
-        size_t id;
+        uint32_t id;
         float x, y, width, height;
 
         message >> wall_count;
@@ -202,7 +202,7 @@ public:
     std::vector<std::pair<uint64_t, object>> player_objects;
     std::vector<Wall> walls;
 
-    void create_from_settings(){
+    void create_from_settings() {
         //magick nubers right now -> need to read from file
         uint32_t map_size = 100;
         float map_block_size = 64;
@@ -319,10 +319,5 @@ public:
         return current_sprite;
     }
 };
-
-
-
-
-
 }
 
