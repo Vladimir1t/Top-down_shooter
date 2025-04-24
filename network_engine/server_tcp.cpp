@@ -1,7 +1,6 @@
 #include <SFML/Network.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
 
 #include <iostream>
 #include <string>
@@ -13,7 +12,18 @@
 int Receive() {
 
     game::game_state_server global_state;
-    global_state.create_from_settings();
+
+    try {
+        global_state.create_from_settings("data/projectile.txt");
+    }
+    catch(std::ios::failure& e){
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+    catch(sf::Exception& e){
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
 
     sf::Time timeout = sf::milliseconds(15);
     /* Set port of tcp server */

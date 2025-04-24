@@ -22,14 +22,27 @@ enum class Status_sprite_index {
 
 namespace game {
 
+enum packet_type{
+    move_bit = 0x1,
+    mouse_bit = 0x10
+};
 
-class control_struct final {
-public:
+struct mouse_input final {
+    double x;
+    double y;
+    double angle;
+};
+
+struct control_struct final {
+    bool move_changed;
+    bool mouse_changed;
+    
     int move_x;
     int move_y;
     int rotate;
-    bool changed;
     int sprite_status;
+
+    mouse_input mouse;
 };
 
 class object: public sf::RectangleShape {
@@ -193,7 +206,15 @@ public:
 class game_state_client final {
 public:
     std::unordered_map<uint64_t, object> player_objects;
+
+    std::unordered_map<size_t, std::unique_ptr<updatable>> projectiles;
+    projectile_factory factory;
+
     Map global_map;  
+
+    void create_from_settings(std::string proj_settings_filename){
+        factory.read_settings(proj_settings_filename);
+    }
 };
 
 class game_state_server final {
@@ -202,7 +223,12 @@ public:
     std::vector<std::pair<uint64_t, object>> player_objects;
     std::vector<Wall> walls;
 
-    void create_from_settings() {
+    std::vector<std::unique_ptr<updatable>> objects;
+    projectile_factory factory;
+
+    void create_from_settings(std::string proj_settings_filename){
+        factory.read_settings(proj_settings_filename);
+
         //magick nubers right now -> need to read from file
         uint32_t map_size = 100;
         float map_block_size = 64;
@@ -230,6 +256,25 @@ public:
         for(size_t i = 0; i < player_objects.size(); ++i){
             player_objects[i].second.update();
         }
+
+        for(auto it = objects.begin(); it != objects.end();){
+            /*
+            iterating trough updatable objects.
+            if update invalidates object it will be count as inactive on next update_status iteration 
+            and will be send to clients once with parameter active = -1
+            */
+            if(it->get()->is_active()){
+                it->get()->update();
+                it++;
+            }
+            else {
+                it = objects.erase(it);
+            }
+        }
+    }
+
+    void create_projectile(float x, float y, float angle, size_t id = 1){
+        objects.push_back(factory.get_projectile(x, y, angle, id));
     }
 };
 
@@ -320,4 +365,3 @@ public:
     }
 };
 }
-

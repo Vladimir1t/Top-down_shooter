@@ -111,14 +111,32 @@ public:
 
     void read_packets(game_state_server& global_state) {
         int move_x, move_y, rotate, sprite_status;
+        game::mouse_input mouse;
+        size_t incoming_packet_type;
+
         for (size_t i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
-                _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
 
-                std::cout << i << ": got message: x: " << move_x << " y: "
-                     << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
-                global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
-                global_state.player_objects[i].second.sprite_status = sprite_status;
+                _incoming_messages[i] >> incoming_packet_type;
+
+                if(incoming_packet_type & game::packet_type::move_bit){
+                    _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
+
+                    #if DEBUG
+                    std::cout << i << ": got move message: x: " << move_x << " y: "
+                         << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
+                    #endif //DEBUG
+                    global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
+                    global_state.player_objects[i].second.sprite_status = sprite_status;
+                }
+                if(incoming_packet_type & game::packet_type::mouse_bit){
+                    _incoming_messages[i] >> mouse.x >> mouse.y >> mouse.angle;
+                    #if DEBUG
+                    std::cout << i << ": got mouse message: x: " << mouse.x << " y: " << mouse.y << " angle: " << mouse.angle << std::endl;
+                    #endif //DEBUG
+                    global_state.create_projectile(global_state.player_objects[i].second._hitbox.x, global_state.player_objects[i].second._hitbox.y , mouse.angle);
+                }
+
                 _incoming_messages[i].clear();
             }
         }
@@ -131,7 +149,6 @@ public:
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
         }
-        
     }
 
     void update_state(game_state_server& global_state){
@@ -144,6 +161,7 @@ public:
         object* obj;
         uint64_t id;
         for (int i = 0; i < client_count; ++i) {
+            //writing players
             _outcoming_messages[i] << client_count;
             for (int j = 0; j < client_count; ++j) {
                 obj = &(global_state.player_objects[j].second);
@@ -160,6 +178,25 @@ public:
                 // << "\n\ty:" << obj->getPosition().y
                 // << "\n\tr:" << obj->getRotation().asRadians()
                 // << "\n\ts:" << obj->sprite_status << std::endl;
+            }
+
+            //writing projectiles
+            const projectile* tmp = 0;
+            _outcoming_messages[i] << global_state.objects.size();
+            for(auto& x: global_state.objects){
+                switch (x.get()->get_type())
+                {
+                case projectile_type:
+                    _outcoming_messages[i] << static_cast<size_t>(projectile_type); //size_t
+                    tmp = dynamic_cast<projectile*> (x.get());
+                    std::cout << "writing projectile with id: " << tmp->id_ << " and unique index: " << tmp->unique_index << std::endl;
+                    _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();
+                    break;
+                
+                default:
+                    _outcoming_messages[i] << other_type;
+                    break;
+                }
             }
         }
     }

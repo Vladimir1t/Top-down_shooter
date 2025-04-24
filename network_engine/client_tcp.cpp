@@ -1,6 +1,7 @@
 #include <SFML/Network.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 
 #include <iostream>
 #include <string>
@@ -47,16 +48,72 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 obj.setRotation(sf::radians(rot));
                 obj.sprite_status = sprite_status;
             }
+
+            size_t proj_count = 0;
+            size_t proj_type = 0;
+            size_t id = 0;
+            bool is_active;
+            std::unordered_map<size_t, std::unique_ptr<game::updatable>>::iterator found_elem;
+            game::projectile* tmp = 0;
+
+            incoming_state >> proj_count;
+            for(size_t i = 0; i < proj_count; ++i){
+                incoming_state >> proj_type;
+                switch (proj_type)
+                {
+                case static_cast<size_t> (game::updatable_type::projectile_type):
+                    incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
+                    if(is_active){
+                        found_elem = global_state.projectiles.find(unique_index);
+                        if(found_elem == global_state.projectiles.end()){
+                            #if DEBUG
+                            std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
+                            #endif //DEBUG
+                            global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
+                        }
+                        else {
+                            tmp =  dynamic_cast<game::projectile*> (found_elem->second.get());
+                            tmp->base_.hitbox_.x = x;
+                            tmp->base_.hitbox_.y = y;
+                        }
+                    }
+                    else{
+                        #if DEBUG
+                        std::cout << "deleting projectile with unique id: " << unique_index << std::endl;
+                        #endif //DEBUG
+                        global_state.projectiles.erase(unique_index);
+                    }
+                    break;
+                default:
+                    std::cout << "error: got default updatable type" << std::endl;
+                    break;
+                }
+            }
         }
-        if (ctrl_handler.changed) {
+
+        size_t change_mask = 0;
+        if(ctrl_handler.move_changed) change_mask |= game::packet_type::move_bit;
+        if(ctrl_handler.mouse_changed) change_mask |= game::packet_type::mouse_bit;
+        
+
+        outcoming_data << change_mask;
+        if (ctrl_handler.move_changed) {
             outcoming_data << ctrl_handler.move_x << ctrl_handler.move_y 
                            << ctrl_handler.rotate << ctrl_handler.sprite_status;
-            ctrl_handler.changed = 0;
+            ctrl_handler.move_changed = 0;
+            
+        }
+        if (ctrl_handler.mouse_changed) {
+            outcoming_data << ctrl_handler.mouse.x << ctrl_handler.mouse.y << ctrl_handler.mouse.angle;
+            ctrl_handler.mouse_changed = 0;
+        }
+
+        if(change_mask != 0){
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "error while sending to server\n";
             }
         }
-        
+
         incoming_state.clear();
         outcoming_data.clear();
     }
@@ -112,7 +169,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
                             change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::RIGHT);
-                            ctrl_handler.changed = 1;
+                            ctrl_handler.move_changed = 1;
                         }
                         move_x_plus = 1;
                         break;
@@ -121,7 +178,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
                             change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::LEFT);
-                            ctrl_handler.changed = 1;
+                            ctrl_handler.move_changed = 1;
                         }
                         move_x_minus = 1;
                         break;
@@ -130,7 +187,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
                             change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::UP);
-                            ctrl_handler.changed = 1;
+                            ctrl_handler.move_changed = 1;
                         }
                         move_y_minus = 1;
                         break;
@@ -139,7 +196,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         if (clock.getElapsedTime().asSeconds() > 0.15) {
                             change_status_sprite(clock, status_sprite, 
                                 ctrl_handler, Status_sprite_index::DOWN);
-                            ctrl_handler.changed = 1;
+                            ctrl_handler.move_changed = 1;
                         }
                         move_y_plus = 1;
                         break;
@@ -148,12 +205,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         break;
                 }
             }
-            if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
+            else if (const auto* key_released = event->getIf<sf::Event::KeyReleased>()) {
                 switch (key_released->code) {
                     case sf::Keyboard::Key::D:
                         move_x_plus = 0;
                         ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
-                        ctrl_handler.changed = 1;
+                        ctrl_handler.move_changed = 1;
                         break;
                     case sf::Keyboard::Key::A: 
                         move_x_minus = 0;
@@ -162,26 +219,34 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                     case sf::Keyboard::Key::W: 
                         move_y_minus = 0;
                         ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
-                        ctrl_handler.changed = 1;
+                        ctrl_handler.move_changed = 1;
                         break;
                     case sf::Keyboard::Key::S: 
                         move_y_plus = 0;
                         ctrl_handler.sprite_status = static_cast<int>(Status_sprite_index::DOWN);
-                        ctrl_handler.changed = 1;
+                        ctrl_handler.move_changed = 1;
                         break;
                     default:
                         break;
                 }
             }
+            else if(const auto* mouse_pressed = event->getIf<sf::Event::MouseButtonPressed>()){
+                if(mouse_pressed->button == sf::Mouse::Button::Left) {
+                    ctrl_handler.mouse_changed = true;
+
+                    //редкостная фигня со static_cast потому что mouse_presserd->position.x это int, а window.getSize - uint
+                    ctrl_handler.mouse = {0, 0, std::atan2(static_cast<long>(mouse_pressed->position.y) - static_cast<long>(window.getSize().y/2), static_cast<long>(mouse_pressed->position.x) -static_cast<long>(window.getSize().x/2))};
+                    #if DEBUG
+                    std::cout << "mouse pressed:\n x, y:" << mouse_pressed->position.x << " " << mouse_pressed->position.y
+                    << "\n wind size x, y: " << window.getSize().x << " " << window.getSize().y
+                    << "\n delta x, y: " << static_cast<long>(mouse_pressed->position.x) -static_cast<long>(window.getSize().x/2) << " " << static_cast<long>(mouse_pressed->position.y) - static_cast<long>(window.getSize().y/2)
+                    << "angle: " << (ctrl_handler.mouse.angle)*180.0*M_1_PI << std::endl;
+                    #endif //DEBUG
+                }
+            }
             else if (event->is<sf::Event::Closed>()) {
                 window.close();
                 exit(0);
-            }
-            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
-                    window.close();
-                    exit(0);
-                }
             }
         }
         move_x = move_x_plus - move_x_minus;
@@ -190,12 +255,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         if (move_x_old != move_x){
             move_x_old = move_x;
             ctrl_handler.move_x = move_x;
-            ctrl_handler.changed = 1;
+            ctrl_handler.move_changed = 1;
         }
         if (move_y_old != move_y) {
             move_y_old = move_y;
             ctrl_handler.move_y = move_y;
-            ctrl_handler.changed = 1;
+            ctrl_handler.move_changed = 1;
         }
 
         /* ----- Render ----- */
@@ -209,6 +274,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         fps_info.render(window, view);
         /* ------------------ */
 
+        //hero render 
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
             std::lock_guard<std::mutex> lock(state_mutex);
 
@@ -239,6 +305,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 window.draw(hero_2.get_sprite());
             }
         }
+
+        /* ---- projectile render ---- */
+        for(auto& obj: global_state.projectiles){
+            obj.second.get()->render(window);
+        }
+
         window.display();
 	}
 }
@@ -260,6 +332,26 @@ int main(int argc, char* argv[]) {
         std::cerr << "You should write the correct index of client [from 0 to N]\n";
         return -1;
     }
+    
+    game::game_state_client global_state;
+
+    try {
+        global_state.create_from_settings("data/projectile.txt");
+    }
+    catch(std::ios::failure& e){
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+    catch(sf::Exception& e){
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+    
+
+    //load map textures
+    global_state.global_map.make_textures("Animations/map/map.png");
+    global_state.global_map.make_map();
+
     sf::TcpSocket server;
     /* IP addres of server */
     sf::IpAddress server_IP(127, 0, 0, 1);
@@ -268,7 +360,7 @@ int main(int argc, char* argv[]) {
     std::cout << "connecting to " << server_IP << " on port " << port << "..." << std::endl;
     sf::Socket::Status status = server.connect(server_IP, port);
 
-    game::game_state_client global_state;
+    
     game::control_struct ctrl_handler = {};
     ushort player_count = 0;
 
@@ -279,10 +371,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
             " and port " << server.getRemotePort() << std::endl;
     }
-
-    //load map textures
-    global_state.global_map.make_textures("Animations/map/map.png");
-    global_state.global_map.make_map();
 
     get_initial_data(global_state, server);
 
