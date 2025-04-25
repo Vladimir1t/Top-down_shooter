@@ -88,9 +88,9 @@ class object: public sf::RectangleShape {
 
 class Wall: public AABB{
     public:
-    uint32_t id_;
+    uint64_t id_;
 
-    Wall(uint32_t id, float x, float y, float width, float height) {
+    Wall(uint64_t id, float x, float y, float width, float height) {
         AABB::set_bounds(x, y, width, height);
         id_ = id;
     };
@@ -173,9 +173,9 @@ public:
 
     void make_walls(sf::Packet& message){
         /* Bounds of map */
-        uint32_t wall_count;
+        uint64_t wall_count;
         
-        uint32_t id;
+        uint64_t id;
         float x, y, width, height;
 
         message >> wall_count;

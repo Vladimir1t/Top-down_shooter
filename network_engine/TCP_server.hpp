@@ -85,7 +85,7 @@ public:
                     _outcoming_messages.emplace_back();
 
                     //creating starting message for each client
-                    _outcoming_messages.back() << static_cast<uint32_t>(global_state.walls.size());
+                    _outcoming_messages.back() << static_cast<uint64_t>(global_state.walls.size());
                     for(auto& w: global_state.walls){
                         _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
                     }
