@@ -49,19 +49,19 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 obj.sprite_status = sprite_status;
             }
 
-            size_t proj_count = 0;
-            size_t proj_type = 0;
-            size_t id = 0;
+            uint64_t proj_count = 0;
+            uint64_t proj_type = 0;
+            uint64_t id = 0;
             bool is_active;
-            std::unordered_map<size_t, std::unique_ptr<game::updatable>>::iterator found_elem;
+            std::unordered_map<uint64_t, std::unique_ptr<game::updatable>>::iterator found_elem;
             game::projectile* tmp = 0;
 
             incoming_state >> proj_count;
-            for(size_t i = 0; i < proj_count; ++i){
+            for(uint64_t i = 0; i < proj_count; ++i){
                 incoming_state >> proj_type;
                 switch (proj_type)
                 {
-                case static_cast<size_t> (game::updatable_type::projectile_type):
+                case static_cast<uint64_t> (game::updatable_type::projectile_type):
                     incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
                     if(is_active){
                         found_elem = global_state.projectiles.find(unique_index);
@@ -91,7 +91,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             }
         }
 
-        size_t change_mask = 0;
+        uint64_t change_mask = 0;
         if(ctrl_handler.move_changed) change_mask |= game::packet_type::move_bit;
         if(ctrl_handler.mouse_changed) change_mask |= game::packet_type::mouse_bit;
         
@@ -128,7 +128,7 @@ static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::con
 }
 
 static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state,
-    ushort& player_count, size_t index_cli) {
+    ushort& player_count, uint64_t index_cli) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);

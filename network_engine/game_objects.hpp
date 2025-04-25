@@ -94,7 +94,7 @@ public:
 };
 
 
-static size_t unique_index_counter = 0;
+static uint64_t unique_index_counter = 0;
 
 class projectile: public updatable{
     public:
@@ -102,15 +102,15 @@ class projectile: public updatable{
 
     bool active_ = true;
     int damage_ = 100;
-    size_t frame_counter_ = 0; //updates every tick
-    size_t max_frames_ = 300;
-    size_t unique_index = 0;
-    size_t id_ = 0;
+    uint64_t frame_counter_ = 0; //updates every tick
+    uint64_t max_frames_ = 300;
+    uint64_t unique_index = 0;
+    uint64_t id_ = 0;
 
     std::vector<sf::Sprite>* base_sprites_;
 
 
-    projectile(size_t id, float start_x, float start_y, float angle, projectile_settings settings, std::vector<sf::Sprite>* base_sprites):
+    projectile(uint64_t id, float start_x, float start_y, float angle, projectile_settings settings, std::vector<sf::Sprite>* base_sprites):
         base_{{start_x, start_y, settings.hitbox.width, settings.hitbox.height}, 
                angle, 
               {settings.velocity*std::cos(angle), settings.velocity*std::sin(angle)}}, 
@@ -148,10 +148,10 @@ class projectile: public updatable{
 };
 
 class projectile_factory{
-    std::unordered_map<size_t, projectile_settings> settings;
+    std::unordered_map<uint64_t, projectile_settings> settings;
 
-    std::unordered_map<size_t, std::vector<sf::Texture>> textures;
-    std::unordered_map<size_t, std::vector<sf::Sprite>> sprites;
+    std::unordered_map<uint64_t, std::vector<sf::Texture>> textures;
+    std::unordered_map<uint64_t, std::vector<sf::Sprite>> sprites;
 
     public:
 
@@ -162,26 +162,26 @@ class projectile_factory{
             throw std::ios::failure("error while opening file");
         }
 
-        size_t count = 0;
+        uint64_t count = 0;
         file >> count;
 
-        size_t id = 0;
+        uint64_t id = 0;
         float width, height, velocity = 0;
         int damage = 0;
         std::string sprite_path;
-        size_t sprite_count = 0; 
+        uint64_t sprite_count = 0; 
 
         sf::Texture tmp_texture;
         std::vector<sf::Texture> tmp_texture_vector;
 
         std::vector<sf::Sprite> tmp_sprites;
 
-        for(size_t i = 0; i < count; ++i){
+        for(uint64_t i = 0; i < count; ++i){
             file >> id;
             file >> width >> height >> velocity >> damage;
             file >> sprite_count;
             std::cout << id << ' ' << width << ' ' << height << ' ' << velocity << ' ' << damage << ' ' << sprite_count << std::endl;
-            for(size_t j = 0; j < sprite_count; ++j){
+            for(uint64_t j = 0; j < sprite_count; ++j){
                 file >> sprite_path;
                 std::cout << '<' << sprite_path << '>' << std::endl;
                 if(!tmp_texture.loadFromFile(sprite_path)) {
@@ -205,7 +205,7 @@ class projectile_factory{
 
     //must return unique pointer, that contains pointer to "updatable" base of the new object
     //then it can be stored in std::vector<std::unique_ptr<updatable>>
-    std::unique_ptr<updatable> get_projectile(float start_x, float start_y, float angle, size_t projectile_id){
+    std::unique_ptr<updatable> get_projectile(float start_x, float start_y, float angle, uint64_t projectile_id){
         return std::unique_ptr<updatable>(new projectile {projectile_id, start_x, start_y, angle, settings[projectile_id], &(sprites[projectile_id])});
     };
 };

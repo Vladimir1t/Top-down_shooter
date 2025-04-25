@@ -85,7 +85,7 @@ public:
                     _outcoming_messages.emplace_back();
 
                     //creating starting message for each client
-                    _outcoming_messages.back() << static_cast<uint32_t>(global_state.walls.size());
+                    _outcoming_messages.back() << static_cast<uint64_t>(global_state.walls.size());
                     for(auto& w: global_state.walls){
                         _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
                     }
@@ -112,9 +112,9 @@ public:
     void read_packets(game_state_server& global_state) {
         int move_x, move_y, rotate, sprite_status;
         game::mouse_input mouse;
-        size_t incoming_packet_type;
+        uint64_t incoming_packet_type;
 
-        for (size_t i = 0; i < _clients.size(); ++i) {
+        for (uint64_t i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
 
                 _incoming_messages[i] >> incoming_packet_type;
@@ -187,7 +187,7 @@ public:
                 switch (x.get()->get_type())
                 {
                 case projectile_type:
-                    _outcoming_messages[i] << static_cast<size_t>(projectile_type); //size_t
+                    _outcoming_messages[i] << static_cast<uint64_t>(projectile_type); //uint64_t
                     tmp = dynamic_cast<projectile*> (x.get());
                     std::cout << "writing projectile with id: " << tmp->id_ << " and unique index: " << tmp->unique_index << std::endl;
                     _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();
@@ -218,7 +218,7 @@ public:
     }
 
     void clear_outcome() {
-        for (size_t i = 0; i < _outcoming_messages.size(); ++i) {
+        for (uint64_t i = 0; i < _outcoming_messages.size(); ++i) {
             _outcoming_messages[i].clear();
         }
     }
