@@ -88,9 +88,9 @@ class object: public sf::RectangleShape {
 
 class Wall: public AABB{
     public:
-    size_t id_;
+    uint64_t id_;
 
-    Wall(size_t id, float x, float y, float width, float height) {
+    Wall(uint64_t id, float x, float y, float width, float height) {
         AABB::set_bounds(x, y, width, height);
         id_ = id;
     };
@@ -137,8 +137,8 @@ class Map final {
 private:
     std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
-    uint32_t map_size = 100;
-    uint32_t map_block_size = 64;
+    uint64_t map_size = 100;
+    uint64_t map_block_size = 64;
 
 public: 
     std::vector<Wall> walls;
@@ -159,7 +159,7 @@ public:
 
     void make_map() {
 
-        for (size_t i = 0; i < map_size * map_size; ++i) {
+        for (uint64_t i = 0; i < map_size * map_size; ++i) {
             sf::Sprite sprite(_textures[i % 5]);
             _sprites.push_back(sprite);
         }
@@ -173,15 +173,15 @@ public:
 
     void make_walls(sf::Packet message){
         /* Bounds of map */
-        size_t wall_count;
+        uint64_t wall_count;
         
-        size_t id;
+        uint64_t id;
         float x, y, width, height;
 
         message >> wall_count;
         walls.reserve(wall_count);
 
-        for(size_t i = 0; i < wall_count; ++i){
+        for(uint64_t i = 0; i < wall_count; ++i){
             message >> id >> x >> y >> width >> height;
             std::cout << "wall: " << id << ' ' << x << ' ' << ' ' << y << ' ' << width << ' ' << height << std::endl;
 
@@ -207,7 +207,7 @@ class game_state_client final {
 public:
     std::unordered_map<uint64_t, object> player_objects;
 
-    std::unordered_map<size_t, std::unique_ptr<updatable>> projectiles;
+    std::unordered_map<uint64_t, std::unique_ptr<updatable>> projectiles;
     projectile_factory factory;
 
     Map global_map;  
@@ -230,7 +230,7 @@ public:
         factory.read_settings(proj_settings_filename);
 
         //magick nubers right now -> need to read from file
-        uint32_t map_size = 100;
+        uint64_t map_size = 100;
         float map_block_size = 64;
 
         Wall w = {0, 0, 0, map_size * map_block_size + 60, 5};
@@ -253,7 +253,7 @@ public:
     }
 
     void update_state() {
-        for(size_t i = 0; i < player_objects.size(); ++i){
+        for(uint64_t i = 0; i < player_objects.size(); ++i){
             player_objects[i].second.update();
         }
 
@@ -273,7 +273,7 @@ public:
         }
     }
 
-    void create_projectile(float x, float y, float angle, size_t id = 1){
+    void create_projectile(float x, float y, float angle, uint64_t id = 1){
         objects.push_back(factory.get_projectile(x, y, angle, id));
     }
 };
@@ -287,11 +287,11 @@ class Mob final {
     Status_sprite_index _ind;
 
 public:
-    uint32_t health;
-    uint32_t speed;
+    uint64_t health;
+    uint64_t speed;
     AABB mob_bounds;
 
-    Mob(uint32_t health = 100) : health(health) {
+    Mob(uint64_t health = 100) : health(health) {
 
         bool success = true;
 	    success = success && _textures[0].loadFromFile ("Animations/Carry_Run/Carry_Run_Down-Sheet.png",
