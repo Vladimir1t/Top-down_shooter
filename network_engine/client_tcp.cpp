@@ -43,6 +43,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 // std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
                 //           << rot << "\n\ts: " << sprite_status << std::endl;
                 game::object& obj = global_state.player_objects[unique_index];
+                /* --- information about each mob --- */
                 obj.setPosition({x, y});
                 obj.setRotation(sf::radians(rot));
                 obj.sprite_status = sprite_status;
@@ -121,14 +122,8 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::control_struct& ctrl_handler, 
     Status_sprite_index sprite_index) {
 
-    if (status_sprite == 1) {
-        status_sprite = 0;
-        ctrl_handler.sprite_status = static_cast<int>(sprite_index) + status_sprite;
-    }
-    else {
-        status_sprite = 1;
-        ctrl_handler.sprite_status = static_cast<int>(sprite_index) + status_sprite;
-    }
+    status_sprite = (status_sprite == 1) ? 0 : 1;
+    ctrl_handler.sprite_status = static_cast<int>(sprite_index) + status_sprite;
     clock.restart();
 }
 
@@ -254,7 +249,6 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                 exit(0);
             }
         }
-
         move_x = move_x_plus - move_x_minus;
         move_y = move_y_plus - move_y_minus;
 
@@ -321,7 +315,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 	}
 }
 
-//recieving initial information
+/* --- Recieving initial information --- */
 static void get_initial_data(game::game_state_client& global_state, sf::TcpSocket& server){
     sf::Packet incoming_state;
 

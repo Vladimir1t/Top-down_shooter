@@ -209,5 +209,4 @@ class projectile_factory{
         return std::unique_ptr<updatable>(new projectile {projectile_id, start_x, start_y, angle, settings[projectile_id], &(sprites[projectile_id])});
     };
 };
-
-};
+}
