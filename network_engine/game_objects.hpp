@@ -72,9 +72,8 @@ struct projectile_settings {
     int damage;
 };
 
-struct object_base{
+struct object_base {
     AABB hitbox_;
-    
     float angle;
     sf::Vector2f velocity_;
 };
@@ -84,7 +83,7 @@ enum updatable_type {
     other_type = 1
 };
 
-class updatable{
+class updatable {
 public:
     virtual bool update() = 0;
     virtual void render(sf::RenderWindow&) const = 0;
@@ -96,7 +95,7 @@ public:
 
 static uint64_t unique_index_counter = 0;
 
-class projectile: public updatable{
+class projectile: public updatable {
     public:
     object_base base_;
 
@@ -110,27 +109,27 @@ class projectile: public updatable{
     std::vector<sf::Sprite>* base_sprites_;
 
 
-    projectile(uint64_t id, float start_x, float start_y, float angle, projectile_settings settings, std::vector<sf::Sprite>* base_sprites):
-        base_{{start_x, start_y, settings.hitbox.width, settings.hitbox.height}, 
-               angle, 
-              {settings.velocity*std::cos(angle), settings.velocity*std::sin(angle)}}, 
+    projectile(uint64_t id, float start_x, float start_y, float angle, projectile_settings settings,
+                std::vector<sf::Sprite>* base_sprites):
+        base_{{start_x, start_y, settings.hitbox.width, settings.hitbox.height}, angle, 
+              {settings.velocity * std::cos(angle), settings.velocity * std::sin(angle)}}, 
         damage_(settings.damage), unique_index(unique_index_counter++), id_(id), base_sprites_(base_sprites)
-    {};
+        {};
 
-    bool update(){
-        if(active_){
+    bool update() {
+        if (active_) {
             base_.hitbox_.move(base_.velocity_);
             frame_counter_++;
         }
 
-        if(frame_counter_ >= max_frames_) active_ = false;
+        if (frame_counter_ >= max_frames_) active_ = false;
 
         // std::cout << "updating " << unique_index << std::endl;
 
         return active_;
     };
 
-    bool is_active() const{
+    bool is_active() const {
         return active_;
     }
 
@@ -138,7 +137,7 @@ class projectile: public updatable{
         return projectile_type;
     }
 
-    void render (sf::RenderWindow& window) const{
+    void render (sf::RenderWindow& window) const {
         sf::Sprite tmp_sprite = (*base_sprites_)[0];
         tmp_sprite.setPosition({base_.hitbox_.x, base_.hitbox_.y});
         tmp_sprite.setOrigin({tmp_sprite.getLocalBounds().size.x/2, tmp_sprite.getLocalBounds().size.y/2});
@@ -147,7 +146,7 @@ class projectile: public updatable{
     };
 };
 
-class projectile_factory{
+class projectile_factory {
     std::unordered_map<uint64_t, projectile_settings> settings;
 
     std::unordered_map<uint64_t, std::vector<sf::Texture>> textures;
@@ -158,7 +157,7 @@ class projectile_factory{
     void read_settings(std::string filename){
         std::ifstream file(filename);
 
-        if(!file){
+        if (!file) {
             throw std::ios::failure("error while opening file");
         }
 
@@ -176,15 +175,15 @@ class projectile_factory{
 
         std::vector<sf::Sprite> tmp_sprites;
 
-        for(uint64_t i = 0; i < count; ++i){
+        for (uint64_t i = 0; i < count; ++i) {
             file >> id;
             file >> width >> height >> velocity >> damage;
             file >> sprite_count;
             std::cout << id << ' ' << width << ' ' << height << ' ' << velocity << ' ' << damage << ' ' << sprite_count << std::endl;
-            for(uint64_t j = 0; j < sprite_count; ++j){
+            for (uint64_t j = 0; j < sprite_count; ++j) {
                 file >> sprite_path;
                 std::cout << '<' << sprite_path << '>' << std::endl;
-                if(!tmp_texture.loadFromFile(sprite_path)) {
+                if (!tmp_texture.loadFromFile(sprite_path)) {
                     throw sf::Exception("can't load texture from file");
                 }
                 tmp_texture_vector.emplace_back(tmp_texture);
@@ -193,12 +192,13 @@ class projectile_factory{
             settings[id] = {{0, 0, width, height}, velocity, damage};
             textures[id] = tmp_texture_vector;
 
-            for(auto& x: textures[id]){
+            for (auto& x: textures[id]) {
                 tmp_sprites.emplace_back(x);
             }
             sprites[id] = tmp_sprites;
 
-            std::cout << "created projectile settings: id: " << id << " {0, 0, " << width << " " << height << "}, " << velocity << " " << damage << std::endl;
+            std::cout << "created projectile settings: id: " << id << " {0, 0, " << width << " " << height <<
+                        "}, " << velocity << " " << damage << std::endl;
             std::cout << "sprite amount: " << sprites[id].size() << std::endl;
         }
     }
@@ -206,7 +206,8 @@ class projectile_factory{
     //must return unique pointer, that contains pointer to "updatable" base of the new object
     //then it can be stored in std::vector<std::unique_ptr<updatable>>
     std::unique_ptr<updatable> get_projectile(float start_x, float start_y, float angle, uint64_t projectile_id){
-        return std::unique_ptr<updatable>(new projectile {projectile_id, start_x, start_y, angle, settings[projectile_id], &(sprites[projectile_id])});
+        return std::unique_ptr<updatable>(new projectile {projectile_id, start_x, start_y, angle,
+                                                            settings[1], &(sprites[1])});
     };
 };
 }

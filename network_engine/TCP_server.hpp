@@ -111,15 +111,13 @@ public:
 
     void read_packets(game_state_server& global_state) {
         int move_x, move_y, rotate, sprite_status;
-        game::mouse_input mouse;
         uint64_t incoming_packet_type;
-
         for (uint64_t i = 0; i < _clients.size(); ++i) {
             if (_incoming_messages[i].getDataSize() != 0) {
 
                 _incoming_messages[i] >> incoming_packet_type;
 
-                if(incoming_packet_type & game::packet_type::move_bit){
+                if (incoming_packet_type & game::packet_type::move_bit) {
                     _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
 
                     #if DEBUG
@@ -129,29 +127,42 @@ public:
                     global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
                     global_state.player_objects[i].second.sprite_status = sprite_status;
                 }
-                if(incoming_packet_type & game::packet_type::mouse_bit){
-                    _incoming_messages[i] >> mouse.x >> mouse.y >> mouse.angle;
+                if (incoming_packet_type & game::packet_type::mouse_bit) {
+                    game::mouse_input mouse;
+                    uint64_t id = 0;
+                    _incoming_messages[i] >> mouse.x >> mouse.y >> mouse.angle >> id;
                     #if DEBUG
-                    std::cout << i << ": got mouse message: x: " << mouse.x << " y: " << mouse.y << " angle: " << mouse.angle << std::endl;
-                    #endif //DEBUG
-                    global_state.create_projectile(global_state.player_objects[i].second._hitbox.x, global_state.player_objects[i].second._hitbox.y , mouse.angle);
+                    std::cout << i << ": got mouse message: x: " << mouse.x << " y: "
+                            << mouse.y << " angle: " << mouse.angle << " id: " << id << std::endl;
+                    #endif // DEBUG
+                    global_state.create_projectile(global_state.player_objects[i].second.get_center_x(),
+                                                   global_state.player_objects[i].second.get_center_y(),
+                                                   mouse.angle, id);
                 }
-
                 _incoming_messages[i].clear();
             }
         }
     }
 
-    void check_collisions(game_state_server& global_state){
-        for(auto& [index, player]: global_state.player_objects){
+    void check_collisions(game_state_server& global_state) {
+        for (auto& [index, player]: global_state.player_objects) {
             player._velocity_external = {0, 0};
-            for(auto &wall: global_state.walls){
+            for (auto &wall: global_state.walls) {
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
+            }
+            for (size_t i = 0; i < global_state.objects.size(); i++) {
+                const projectile* obj;
+                obj = dynamic_cast<projectile*>(global_state.objects[i].get());
+                /* hero's own bullets */
+                if (index == obj->id_)
+                    continue;
+                // do something with hit
+                resolve_collision(player._hitbox, obj->base_.hitbox_, player._velocity_external.x, player._velocity_external.y);
             }
         }
     }
 
-    void update_state(game_state_server& global_state){
+    void update_state(game_state_server& global_state) {
         global_state.update_state();
     }
 

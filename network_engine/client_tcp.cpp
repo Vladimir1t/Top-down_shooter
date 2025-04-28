@@ -13,7 +13,7 @@
 #include "game_state.hpp"
 
 static std::mutex state_mutex;
-static int index_cli;
+static uint64_t index_cli;
 static sf::Clock clock_fps;
 static sf::Time delta_time;
 
@@ -57,7 +57,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             game::projectile* tmp = 0;
 
             incoming_state >> proj_count;
-            for(uint64_t i = 0; i < proj_count; ++i){
+            for (uint64_t i = 0; i < proj_count; ++i) {
                 incoming_state >> proj_type;
                 switch (proj_type)
                 {
@@ -92,8 +92,8 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
         }
 
         uint64_t change_mask = 0;
-        if(ctrl_handler.move_changed) change_mask |= game::packet_type::move_bit;
-        if(ctrl_handler.mouse_changed) change_mask |= game::packet_type::mouse_bit;
+        if (ctrl_handler.move_changed) change_mask |= game::packet_type::move_bit;
+        if (ctrl_handler.mouse_changed) change_mask |= game::packet_type::mouse_bit;
         
 
         outcoming_data << change_mask;
@@ -104,11 +104,12 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             
         }
         if (ctrl_handler.mouse_changed) {
-            outcoming_data << ctrl_handler.mouse.x << ctrl_handler.mouse.y << ctrl_handler.mouse.angle;
+            outcoming_data << ctrl_handler.mouse.x << ctrl_handler.mouse.y
+                           << ctrl_handler.mouse.angle << index_cli;;
             ctrl_handler.mouse_changed = 0;
         }
 
-        if(change_mask != 0){
+        if (change_mask != 0){
             if(server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "error while sending to server\n";
             }
@@ -128,7 +129,7 @@ static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::con
 }
 
 static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state,
-    ushort& player_count, uint64_t index_cli) {
+    ushort& player_count) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
@@ -230,18 +231,21 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
                         break;
                 }
             }
-            else if(const auto* mouse_pressed = event->getIf<sf::Event::MouseButtonPressed>()){
-                if(mouse_pressed->button == sf::Mouse::Button::Left) {
+            else if (const auto* mouse_pressed = event->getIf<sf::Event::MouseButtonPressed>()){
+                if (mouse_pressed->button == sf::Mouse::Button::Left) {
                     ctrl_handler.mouse_changed = true;
 
                     //редкостная фигня со static_cast потому что mouse_presserd->position.x это int, а window.getSize - uint
-                    ctrl_handler.mouse = {0, 0, std::atan2(static_cast<long>(mouse_pressed->position.y) - static_cast<long>(window.getSize().y/2), static_cast<long>(mouse_pressed->position.x) -static_cast<long>(window.getSize().x/2))};
+                    ctrl_handler.mouse = {0, 0, std::atan2(static_cast<long>(mouse_pressed->position.y) -
+                        static_cast<long>(window.getSize().y/2), static_cast<long>(mouse_pressed->position.x) -
+                        static_cast<long>(window.getSize().x/2))};
                     #if DEBUG
-                    std::cout << "mouse pressed:\n x, y:" << mouse_pressed->position.x << " " << mouse_pressed->position.y
-                    << "\n wind size x, y: " << window.getSize().x << " " << window.getSize().y
-                    << "\n delta x, y: " << static_cast<long>(mouse_pressed->position.x) -static_cast<long>(window.getSize().x/2) << " " << static_cast<long>(mouse_pressed->position.y) - static_cast<long>(window.getSize().y/2)
-                    << "angle: " << (ctrl_handler.mouse.angle)*180.0*M_1_PI << std::endl;
-                    #endif //DEBUG
+                        std::cout << "mouse pressed:\n x, y:" << mouse_pressed->position.x << " " << mouse_pressed->position.y
+                            << "\n wind size x, y: " << window.getSize().x << " " << window.getSize().y
+                            << "\n delta x, y: " << static_cast<long>(mouse_pressed->position.x) -static_cast<long>(window.getSize().x/2)
+                            << " " << static_cast<long>(mouse_pressed->position.y) - static_cast<long>(window.getSize().y/2)
+                            << "angle: " << (ctrl_handler.mouse.angle)*180.0*M_1_PI << std::endl;
+                    #endif // DEBUG
                 }
             }
             else if (event->is<sf::Event::Closed>()) {
@@ -274,8 +278,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         fps_info.render(window, view);
         /* ------------------ */
 
-        //hero render 
-        for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++){
+        for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++) {
             std::lock_guard<std::mutex> lock(state_mutex);
 
             sf::RectangleShape rect{{obj->second._hitbox.width, obj->second._hitbox.height}};
@@ -297,17 +300,17 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
             } 
             /* ---- Another hero ---- */
             else {
-                game::Mob hero_2;
-                hero_2.make_sprites();
-                hero_2.set_position(obj->second.getPosition());
-                hero_2.set_rotation(obj->second.getRotation());
-                hero_2.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
-                window.draw(hero_2.get_sprite());
+                game::Mob hero_other;
+                hero_other.make_sprites();
+                hero_other.set_position(obj->second.getPosition());
+                hero_other.set_rotation(obj->second.getRotation());
+                hero_other.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
+                window.draw(hero_other.get_sprite());
             }
         }
 
         /* ---- projectile render ---- */
-        for(auto& obj: global_state.projectiles){
+        for (auto& obj: global_state.projectiles) {
             obj.second.get()->render(window);
         }
 
@@ -316,7 +319,7 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 }
 
 /* --- Recieving initial information --- */
-static void get_initial_data(game::game_state_client& global_state, sf::TcpSocket& server){
+static void get_initial_data(game::game_state_client& global_state, sf::TcpSocket& server) {
     sf::Packet incoming_state;
 
     if (server.receive(incoming_state) != sf::Socket::Status::Done) {
@@ -338,11 +341,11 @@ int main(int argc, char* argv[]) {
     try {
         global_state.create_from_settings("data/projectile.txt");
     }
-    catch(std::ios::failure& e){
+    catch(std::ios::failure& e) {
         std::cout << e.what() << std::endl;
         return -1;
     }
-    catch(sf::Exception& e){
+    catch(sf::Exception& e) {
         std::cout << e.what() << std::endl;
         return -1;
     }
@@ -378,7 +381,8 @@ int main(int argc, char* argv[]) {
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
     /* Main thread of rendering module */
-    render_window(ctrl_handler, global_state, player_count, std::stoi(argv[1]));
+    index_cli = std::stoi(argv[1]);
+    render_window(ctrl_handler, global_state, player_count);
 
     network_thread.join();    
 

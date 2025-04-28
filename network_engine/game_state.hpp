@@ -20,6 +20,13 @@ enum class Status_sprite_index {
     LEFT2  = 41,
 };
 
+namespace sf {
+/* --- overloading operator << for size_t */
+inline Packet& operator<<(Packet& packet, size_t value) {
+    return packet << static_cast<uint64_t>(value);
+}
+}
+
 namespace game {
 
 enum packet_type{
@@ -47,16 +54,22 @@ struct control_struct final {
 
 class object: public sf::RectangleShape {
 
-
     sf::Vector2f _velocity_coeff;
     float _rotation_coeff;
 
     public:
-    sf::Vector2f _velocity_external; //all external factors modify this
-    sf::Vector2i _velocity_internal; //velocity from internal movement 
+    sf::Vector2f _velocity_external; // all external factors modify this
+    sf::Vector2i _velocity_internal; // velocity from internal movement 
     int _rotation;
 
     AABB _hitbox;
+
+    float get_center_x() {
+        return _hitbox.x + _hitbox.width / 2;
+    }
+    float get_center_y() {
+        return _hitbox.y + _hitbox.height / 2;
+    }
 
     object(): _hitbox({0, 0, 64, 64}) { 
         /* Start coords */
