@@ -32,14 +32,14 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 
             uint64_t unique_index;
             float x, y, rot;
-            int sprite_status;
+            int sprite_status, health;
             incoming_state >> player_count;
             // std::cout << "rn " << player_count << " are playing" << std::endl;
 
             std::lock_guard<std::mutex> lock(state_mutex);
 
             for (int i = 0; i < player_count; ++i) {
-                incoming_state >> unique_index >> x >> y >> rot >> sprite_status;
+                incoming_state >> unique_index >> x >> y >> rot >> sprite_status >> health;
                 // std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
                 //           << rot << "\n\ts: " << sprite_status << std::endl;
                 game::object& obj = global_state.player_objects[unique_index];
@@ -47,6 +47,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 obj.setPosition({x, y});
                 obj.setRotation(sf::radians(rot));
                 obj.sprite_status = sprite_status;
+                obj.health = health;
             }
 
             uint64_t proj_count = 0;
@@ -63,10 +64,10 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 {
                 case static_cast<uint64_t> (game::updatable_type::projectile_type):
                     incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
-                    if(is_active){
+                    if (is_active){
                         found_elem = global_state.projectiles.find(unique_index);
-                        if(found_elem == global_state.projectiles.end()){
-                            #if DEBUG
+                        if (found_elem == global_state.projectiles.end()){
+                            #ifdef DEBUG
                             std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
                             #endif //DEBUG
                             global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
@@ -274,19 +275,21 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
         /* ------ FPS ------- */
         game::window_info fps_info("open-sans/OpenSans-Bold.ttf");
-        fps_info.update_info(delta_time.asMilliseconds(), hero.health);
+        fps_info.update_info(delta_time.asMilliseconds(), global_state.player_objects.at(index_cli).health);
         fps_info.render(window, view);
         /* ------------------ */
 
         for (auto obj = global_state.player_objects.begin(); obj != global_state.player_objects.end(); obj++) {
             std::lock_guard<std::mutex> lock(state_mutex);
 
-            sf::RectangleShape rect{{obj->second._hitbox.width, obj->second._hitbox.height}};
-            rect.setOutlineThickness(1);
-            rect.setOutlineColor({255, 0, 0});
-            rect.setFillColor({0,0,0});
-            rect.move(obj->second.getPosition());
-            window.draw(rect);
+            #ifdef DEBUG
+                sf::RectangleShape rect{{obj->second._hitbox.width, obj->second._hitbox.height}};
+                rect.setOutlineThickness(1);
+                rect.setOutlineColor({255, 0, 0});
+                rect.setFillColor({0,0,0});
+                rect.move(obj->second.getPosition());
+                window.draw(rect);
+            #endif // DEBUG
 
             /* ---- Your hero ---- */
             if (index_cli == obj->first) {

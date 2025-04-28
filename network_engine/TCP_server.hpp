@@ -10,12 +10,12 @@
 
 namespace game {
 
-void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float& move_x, float& move_y) {
+bool resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float& move_x, float& move_y) {
 
     if (!player_box.intersects(obstacle)){
         // std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
         //             << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
-        return;
+        return false;
     }
 
     float overlap_x = player_box.right() - obstacle.x;
@@ -35,6 +35,7 @@ void resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float
     else {
         move_y = push_y;
     }
+    return true;
 }
 
 class TCP_server final {
@@ -151,14 +152,29 @@ public:
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
             for (auto& st_obj: global_state.objects) {
-                const projectile* obj;
+                projectile* obj;
                 obj = dynamic_cast<projectile*>(st_obj.get());
                 /* hero's own bullets */
                 if (index == obj->id_)
                     continue;
                 // do something with hit
-                resolve_collision(player._hitbox, obj->base_.hitbox_, player._velocity_external.x, player._velocity_external.y);
+                if (resolve_collision(player._hitbox, obj->base_.hitbox_,
+                                      player._velocity_external.x,
+                                      player._velocity_external.y)) {
+                    obj->frame_counter_ = obj->max_frames_;
+                    player.health -= obj->damage_;
+                }
             }
+        }
+        for (auto& st_obj: global_state.objects) {
+                projectile* obj;
+                obj = dynamic_cast<projectile*>(st_obj.get());
+                for (auto &wall: global_state.walls) {
+                    if (wall.intersects(obj->base_.hitbox_)) {
+                        obj->frame_counter_ = obj->max_frames_;
+                        //obj->active_ = false;
+                    }
+                }
         }
     }
 
@@ -181,7 +197,8 @@ public:
                                        << obj->getPosition().x
                                        << obj->getPosition().y
                                        << obj->getRotation().asRadians()
-                                       << obj->sprite_status;
+                                       << obj->sprite_status
+                                       << obj->health;
                 
                 // std::cout << "player № " << i 
                 // << "\n\tid:" << id

@@ -101,7 +101,7 @@ class projectile: public updatable {
 
     bool active_ = true;
     int damage_ = 100;
-    uint64_t frame_counter_ = 0; //updates every tick
+    uint64_t frame_counter_ = 0; // updates every tick
     uint64_t max_frames_ = 300;
     uint64_t unique_index = 0;
     uint64_t id_ = 0;

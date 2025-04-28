@@ -61,6 +61,7 @@ class object: public sf::RectangleShape {
     sf::Vector2f _velocity_external; // all external factors modify this
     sf::Vector2i _velocity_internal; // velocity from internal movement 
     int _rotation;
+    int health;
 
     AABB _hitbox;
 
@@ -71,7 +72,7 @@ class object: public sf::RectangleShape {
         return _hitbox.y + _hitbox.height / 2;
     }
 
-    object(): _hitbox({0, 0, 64, 64}) { 
+    object(int health = 100): _hitbox({0, 0, 64, 64}), health(health) { 
         /* Start coords */
         move({100, 100}); 
     }
