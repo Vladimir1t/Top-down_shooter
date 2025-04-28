@@ -150,9 +150,9 @@ public:
             for (auto &wall: global_state.walls) {
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
             }
-            for (size_t i = 0; i < global_state.objects.size(); i++) {
+            for (auto& st_obj: global_state.objects) {
                 const projectile* obj;
-                obj = dynamic_cast<projectile*>(global_state.objects[i].get());
+                obj = dynamic_cast<projectile*>(st_obj.get());
                 /* hero's own bullets */
                 if (index == obj->id_)
                     continue;
