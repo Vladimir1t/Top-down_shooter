@@ -75,7 +75,7 @@ public:
 
     object(int health = 100): _hitbox({0, 0, 64, 64}), health(health) { 
         /* Start coords */
-        move({100, 100}); 
+        move({11 * 46, 11 * 46}); 
     }
 
     void move(sf::Vector2f offset) {
@@ -153,7 +153,10 @@ private:
     std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
     const uint64_t map_size = 100;
-    const uint64_t map_block_size = 64;
+    const float map_block_size = 46;
+    const float wall_size = 10;
+    const float map_hole_size = 6;
+    const float bloks_num_max = 3;
 
 public: 
     std::vector<Wall<float>> walls;
@@ -174,8 +177,9 @@ public:
 
     void make_map() {
 
+        /* --- wood map --- */
         for (uint64_t i = 0; i < map_size * map_size; ++i) {
-            sf::Sprite sprite(_textures[i % 5]);
+            sf::Sprite sprite(_textures[0]);
             _sprites.push_back(sprite);
         }
         for (float y = 0; y < map_size; ++y) {
@@ -184,6 +188,8 @@ public:
                 _sprites[index].setPosition({x * 46, y * 46});
             }
         }
+        /* --- stone map --- */
+        build_stone_map();
     }
 
     void make_walls(sf::Packet& message){
@@ -196,7 +202,7 @@ public:
         message >> wall_count;
         walls.reserve(wall_count);
 
-        for(uint64_t i = 0; i < wall_count; ++i){
+        for (uint64_t i = 0; i < wall_count; ++i){
             message >> id >> x >> y >> width >> height;
             std::cout << "wall: " << id << ' ' << x << ' ' << ' '
                       << y << ' ' << width << ' ' << height << std::endl;
@@ -210,11 +216,60 @@ public:
         for (auto block : _sprites) {
             window.draw(block);
         }
-        for(auto& x: walls){
-            sf::RectangleShape rect{{x.width, x.height}};
-            rect.setFillColor({255,255,255});
-            rect.move({x.x, x.y});
-            window.draw(rect);
+        #ifdef DEBUG
+            for(auto& x: walls){
+                sf::RectangleShape rect{{x.width, x.height}};
+                rect.setFillColor({255,255,255});
+                rect.move({x.x, x.y});
+                window.draw(rect);
+            }
+        #endif
+    }
+
+private:
+    void build_stone_map() {
+        /* --- stone map --- */
+        for (float block_num = 0; block_num < bloks_num_max; ++block_num) {
+            for (float x = 10; x < wall_size + 10; ++x) {
+                if (block_num != 0 && x > 13 && x < 17)
+                    continue;
+                sf::Sprite sprite(_textures[4]);
+                sprite.setPosition({x * map_block_size, 10 * map_block_size + block_num * 
+                        (map_block_size * 10 + map_hole_size * map_block_size)});
+                _sprites.push_back(sprite);
+            }
+            for (float y = 10; y < wall_size + 10; ++y) {
+                sf::Sprite sprite(_textures[4]);
+                sprite.setPosition({10 * map_block_size, y * map_block_size + block_num * 
+                        (map_block_size * 10 + map_hole_size * map_block_size)});
+                _sprites.push_back(sprite);
+            }
+            for (float y = 10; y < wall_size + 10; ++y) {
+                sf::Sprite sprite(_textures[4]);
+                sprite.setPosition({(wall_size + 10) * map_block_size, y * map_block_size + block_num * 
+                        (map_block_size * 10 + map_hole_size * map_block_size)});
+                _sprites.push_back(sprite);
+            }
+            for (float x = 10; x < wall_size + 11; ++x) {
+                if (block_num != bloks_num_max - 1 && x > 12 && x < 17)
+                    continue;
+                sf::Sprite sprite(_textures[4]);
+                sprite.setPosition({x * map_block_size, (wall_size + 10) * map_block_size + block_num * 
+                        (map_block_size * 10 + map_hole_size * map_block_size)});
+                _sprites.push_back(sprite);
+            }
+            for (float block_num = 0; block_num < bloks_num_max - 1; ++block_num) {
+                for (float y = 0; y < 6; ++y) {
+                    sf::Sprite sprite(_textures[4]);
+                    sprite.setPosition({13 * map_block_size, (wall_size + 10 + y) * map_block_size + block_num * 
+                            (map_block_size * 10 + map_hole_size * map_block_size)});
+                    _sprites.push_back(sprite);
+                    sf::Sprite sprite2(_textures[4]);
+                    sprite2.setPosition({17 * map_block_size, (wall_size + 10 + y) * map_block_size + block_num * 
+                            (map_block_size * 10 + map_hole_size * map_block_size)});
+                    _sprites.push_back(sprite2);
+                }
+            }
         }
     }
 };
@@ -247,7 +302,9 @@ public:
 
         //magick nubers right now -> need to read from file
         const uint64_t map_size = 100;
-        const float map_block_size = 64;
+        const float map_block_size = 46;
+        const float map_hole_size = 6;
+        const float bloks_num_max = 3;
 
         Wall<float> w = {0, 0, 0, map_size * map_block_size + 60, 5};
         walls.push_back(w);
@@ -260,6 +317,49 @@ public:
 
         w = {0, map_size * map_block_size, 0, 5, map_size * map_block_size + 60};
         walls.push_back(w);
+        /* --- stone map --- */
+        for (float block_num = 0; block_num < bloks_num_max; ++block_num) {
+            w = {0, 10 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size),
+                    map_block_size, 10 * map_block_size};
+            walls.push_back(w);
+            w = {0, 20 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size),
+                    map_block_size, 10 * map_block_size};
+            walls.push_back(w);
+            if (block_num != 0) {
+                w = {0, 10 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        4 * map_block_size, map_block_size};
+                walls.push_back(w);
+                w = {0, 17 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        4 * map_block_size, map_block_size};
+                walls.push_back(w);
+            } 
+            else {
+                w = {0, 10 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        10 * map_block_size, map_block_size};
+                walls.push_back(w);
+            }
+            if (block_num != bloks_num_max - 1) {
+                w = {0, 10 * map_block_size, 20 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        4 * map_block_size, map_block_size};
+                walls.push_back(w);
+                w = {0, 17 * map_block_size, 20 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        4 * map_block_size, map_block_size};
+                walls.push_back(w);
+            }
+            else {
+                w = {0, 10 * map_block_size, 20 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                        10 * map_block_size, map_block_size};
+                walls.push_back(w);
+            }
+        }
+        for (float block_num = 0; block_num < bloks_num_max - 1; ++block_num) {
+            w = {0, 13 * map_block_size, 20 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size), 
+                    map_block_size, map_hole_size * map_block_size};
+            walls.push_back(w);
+            w = {0, 17 * map_block_size, 20 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size),
+                    map_block_size, map_hole_size * map_block_size};
+            walls.push_back(w);
+        }
     };
 
     void add_player() {
