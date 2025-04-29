@@ -29,7 +29,7 @@ inline Packet& operator<<(Packet& packet, size_t value) {
 
 namespace game {
 
-enum packet_type{
+enum packet_type {
     move_bit = 0x1,
     mouse_bit = 0x10
 };
@@ -57,13 +57,14 @@ class object: public sf::RectangleShape {
     sf::Vector2f _velocity_coeff;
     float _rotation_coeff;
 
-    public:
+public:
     sf::Vector2f _velocity_external; // all external factors modify this
     sf::Vector2i _velocity_internal; // velocity from internal movement 
+    int sprite_status;
     int _rotation;
     int health;
 
-    AABB _hitbox;
+    AABB<float> _hitbox;
 
     float get_center_x() {
         return _hitbox.x + _hitbox.width / 2;
@@ -76,9 +77,8 @@ class object: public sf::RectangleShape {
         /* Start coords */
         move({100, 100}); 
     }
-    int sprite_status;
 
-    void move(sf::Vector2f offset){
+    void move(sf::Vector2f offset) {
         object::RectangleShape::move(offset);
         _hitbox.x += offset.x;
         _hitbox.y += offset.y;
@@ -100,12 +100,13 @@ class object: public sf::RectangleShape {
     }
 };
 
-class Wall: public AABB{
-    public:
+template <typename T>
+class Wall: public AABB<T> {
+public:
     uint64_t id_;
 
-    Wall(uint64_t id, float x, float y, float width, float height) {
-        AABB::set_bounds(x, y, width, height);
+    Wall(uint64_t id, T x, T y, T width, T height) {
+        AABB<T>::set_bounds(x, y, width, height);
         id_ = id;
     };
 };
@@ -151,11 +152,11 @@ class Map final {
 private:
     std::vector<sf::Sprite> _sprites;
     std::array<sf::Texture, 5> _textures;
-    uint64_t map_size = 100;
-    uint64_t map_block_size = 64;
+    const uint64_t map_size = 100;
+    const uint64_t map_block_size = 64;
 
 public: 
-    std::vector<Wall> walls;
+    std::vector<Wall<float>> walls;
 
     void make_textures(std::string file_name) {
         bool success = true;
@@ -197,9 +198,10 @@ public:
 
         for(uint64_t i = 0; i < wall_count; ++i){
             message >> id >> x >> y >> width >> height;
-            std::cout << "wall: " << id << ' ' << x << ' ' << ' ' << y << ' ' << width << ' ' << height << std::endl;
+            std::cout << "wall: " << id << ' ' << x << ' ' << ' '
+                      << y << ' ' << width << ' ' << height << std::endl;
 
-            game::Wall w = {id, x, y, width, height};
+            game::Wall<float> w = {id, x, y, width, height};
             walls.push_back(w);
         }
     }
@@ -235,7 +237,7 @@ class game_state_server final {
 public:
     uint64_t next_player_unique_id = 0;
     std::vector<std::pair<uint64_t, object>> player_objects;
-    std::vector<Wall> walls;
+    std::vector<Wall<float>> walls;
 
     std::vector<std::unique_ptr<updatable>> objects;
     projectile_factory factory;
@@ -244,10 +246,10 @@ public:
         factory.read_settings(proj_settings_filename);
 
         //magick nubers right now -> need to read from file
-        uint64_t map_size = 100;
-        float map_block_size = 64;
+        const uint64_t map_size = 100;
+        const float map_block_size = 64;
 
-        Wall w = {0, 0, 0, map_size * map_block_size + 60, 5};
+        Wall<float> w = {0, 0, 0, map_size * map_block_size + 60, 5};
         walls.push_back(w);
 
         w = {0, 0, 0, 5, map_size * map_block_size + 60};
@@ -273,10 +275,10 @@ public:
 
         for(auto it = objects.begin(); it != objects.end();){
             /*
-            iterating trough updatable objects.
-            if update invalidates object it will be count as inactive on next update_status iteration 
-            and will be send to clients once with parameter active = -1
-            */
+             * iterating trough updatable objects.
+             * if update invalidates object it will be count as inactive on next update_status iteration 
+             * and will be send to clients once with parameter active = -1
+             */
             if(it->get()->is_active()){
                 it->get()->update();
                 it++;
@@ -303,7 +305,7 @@ class Mob final {
 public:
     uint64_t health;
     uint64_t speed;
-    AABB mob_bounds;
+    AABB<float> mob_bounds;
 
     Mob(uint64_t health = 100) : health(health) {
 

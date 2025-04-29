@@ -5,16 +5,19 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <vector>
 
 #include "game_state.hpp"
 
 namespace game {
 
-bool resolve_collision(game::AABB& player_box, const game::AABB& obstacle, float& move_x, float& move_y) {
+bool resolve_collision(game::AABB<float>& player_box, const game::AABB<float>& obstacle, float& move_x, float& move_y) {
 
-    if (!player_box.intersects(obstacle)){
-        // std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
-        //             << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
+    if (!player_box.intersects(obstacle)) {
+        #ifdef DEBUG
+            std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
+                        << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
+        #endif
         return false;
     }
 
@@ -85,7 +88,7 @@ public:
                     _incoming_messages.emplace_back(); // adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
 
-                    //creating starting message for each client
+                    // creating starting message for each client
                     _outcoming_messages.back() << static_cast<uint64_t>(global_state.walls.size());
                     for(auto& w: global_state.walls){
                         _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
@@ -121,10 +124,10 @@ public:
                 if (incoming_packet_type & game::packet_type::move_bit) {
                     _incoming_messages[i] >> move_x >> move_y >> rotate >> sprite_status;
 
-                    #if DEBUG
-                    std::cout << i << ": got move message: x: " << move_x << " y: "
-                         << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
-                    #endif //DEBUG
+                    #ifdef DEBUG
+                        std::cout << i << ": got move message: x: " << move_x << " y: "
+                             << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
+                    #endif // DEBUG
                     global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
                     global_state.player_objects[i].second.sprite_status = sprite_status;
                 }
@@ -133,8 +136,8 @@ public:
                     uint64_t id = 0;
                     _incoming_messages[i] >> mouse.x >> mouse.y >> mouse.angle >> id;
                     #if DEBUG
-                    std::cout << i << ": got mouse message: x: " << mouse.x << " y: "
-                            << mouse.y << " angle: " << mouse.angle << " id: " << id << std::endl;
+                        std::cout << i << ": got mouse message: x: " << mouse.x << " y: "
+                                << mouse.y << " angle: " << mouse.angle << " id: " << id << std::endl;
                     #endif // DEBUG
                     global_state.create_projectile(global_state.player_objects[i].second.get_center_x(),
                                                    global_state.player_objects[i].second.get_center_y(),
@@ -154,7 +157,7 @@ public:
             for (auto& st_obj: global_state.objects) {
                 projectile* obj;
                 obj = dynamic_cast<projectile*>(st_obj.get());
-                /* hero's own bullets */
+                /* --- hero's own bullets --- */
                 if (index == obj->id_)
                     continue;
                 // do something with hit
@@ -199,13 +202,14 @@ public:
                                        << obj->getRotation().asRadians()
                                        << obj->sprite_status
                                        << obj->health;
-                
-                // std::cout << "player № " << i 
-                // << "\n\tid:" << id
-                // << "\n\tx:" << obj->getPosition().x
-                // << "\n\ty:" << obj->getPosition().y
-                // << "\n\tr:" << obj->getRotation().asRadians()
-                // << "\n\ts:" << obj->sprite_status << std::endl;
+                #ifdef DEBUG
+                    std::cout << "player № " << i 
+                    << "\n\tid:" << id
+                    << "\n\tx:" << obj->getPosition().x
+                    << "\n\ty:" << obj->getPosition().y
+                    << "\n\tr:" << obj->getRotation().asRadians()
+                    << "\n\ts:" << obj->sprite_status << std::endl;
+                #endif
             }
 
             //writing projectiles
@@ -215,7 +219,7 @@ public:
                 switch (x.get()->get_type())
                 {
                 case projectile_type:
-                    _outcoming_messages[i] << static_cast<uint64_t>(projectile_type); //uint64_t
+                    _outcoming_messages[i] << static_cast<uint64_t>(projectile_type);
                     tmp = dynamic_cast<projectile*> (x.get());
                     std::cout << "writing projectile with id: " << tmp->id_ << " and unique index: " << tmp->unique_index << std::endl;
                     _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();

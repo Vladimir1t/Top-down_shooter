@@ -5,26 +5,27 @@
 
 #include <iostream>
 #include <fstream>
-#include <array>
+#include <memory>
 #include <vector>
 #include <math.h>
 #include <exception>
 
 namespace game {
 
+template <typename T>
 class AABB {
 public:
-    float x;
-    float y;
-    float width;
-    float height;
+    T x;
+    T y;
+    T width;
+    T height;
     
-    AABB(float x, float y, float width, float height) 
+    AABB(T x, T y, T width, T height) 
         : x(x), y(y), width(width), height(height) {}
         
     AABB() = default;
         
-    void set_bounds(float x_, float y_, float width_, float height_) {
+    void set_bounds(T x_, T y_, T width_, T height_) {
         x = x_;
         y = y_;
         width = width_;
@@ -33,16 +34,16 @@ public:
 
     bool contains(const sf::Vector2f& point) const {
         return (point.x >= x) && 
-                (point.x <= x + width) &&
-                (point.y >= y) &&
-                (point.y <= y + height);
+               (point.x <= x + width) &&
+               (point.y >= y) &&
+               (point.y <= y + height);
     }
     
     bool intersects(const AABB& other) const {
         return (x < other.x + other.width) &&
-                (x + width > other.x) &&
-                (y < other.y + other.height) &&
-                (y + height > other.y);
+               (x + width > other.x) &&
+               (y < other.y + other.height) &&
+               (y + height > other.y);
     }
     
     void clamp(sf::Vector2f& position, const sf::Vector2f& size) const {
@@ -50,14 +51,14 @@ public:
         position.y = std::max(y, std::min(position.y, y + height - size.y));
     }
     
-    float right() const { 
+    T right() const { 
         return x + width; 
     }
-    float bottom() const { 
+    T bottom() const { 
         return y + height; 
     }
     sf::Vector2f center() const { 
-        return {x + width/2, y + height/2}; 
+        return {x + width / 2, y + height / 2}; 
     }
 
     void move(sf::Vector2f velocity){
@@ -67,13 +68,13 @@ public:
 };
 
 struct projectile_settings {
-    AABB hitbox;
+    AABB<float> hitbox;
     float velocity; // vx^2 + vy^2 = const
     int damage;
 };
 
 struct object_base {
-    AABB hitbox_;
+    AABB<float> hitbox_;
     float angle;
     sf::Vector2f velocity_;
 };
@@ -92,7 +93,6 @@ public:
     virtual ~updatable() {};
 };
 
-
 static uint64_t unique_index_counter = 0;
 
 class projectile: public updatable {
@@ -101,13 +101,12 @@ class projectile: public updatable {
 
     bool active_ = true;
     int damage_ = 100;
-    uint64_t frame_counter_ = 0; // updates every tick
-    uint64_t max_frames_ = 300;
+    uint64_t frame_counter_ = 0;
+    const uint64_t max_frames_ = 300;
     uint64_t unique_index = 0;
     uint64_t id_ = 0;
 
     std::vector<sf::Sprite>* base_sprites_;
-
 
     projectile(uint64_t id, float start_x, float start_y, float angle, projectile_settings settings,
                 std::vector<sf::Sprite>* base_sprites):
@@ -125,7 +124,6 @@ class projectile: public updatable {
         if (frame_counter_ >= max_frames_) active_ = false;
 
         // std::cout << "updating " << unique_index << std::endl;
-
         return active_;
     };
 

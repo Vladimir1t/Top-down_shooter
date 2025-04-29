@@ -137,9 +137,9 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     const sf::Font font("open-sans/OpenSans-Regular.ttf");
 
     /* ------- Hero ------ */
-    game::Mob hero;
-    hero.make_sprites();
-    hero.set_sprite(Status_sprite_index::DOWN);
+    game::Mob hero_sprite;
+    hero_sprite.make_sprites();
+    hero_sprite.set_sprite(Status_sprite_index::DOWN);
     /* ------------------- */
 
     sf::Clock clock;
@@ -293,30 +293,28 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
             /* ---- Your hero ---- */
             if (index_cli == obj->first) {
-                hero.set_position(obj->second.getPosition());
-                hero.set_rotation(obj->second.getRotation());
-                hero.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
-                window.draw(hero.get_sprite());
+                hero_sprite.set_position(obj->second.getPosition());
+                hero_sprite.set_rotation(obj->second.getRotation());
+                hero_sprite.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
+                window.draw(hero_sprite.get_sprite());
                 /* ---- View ---- */
                 view.setCenter(obj->second.getPosition());
                 window.setView(view);
             } 
             /* ---- Another hero ---- */
             else {
-                game::Mob hero_other;
-                hero_other.make_sprites();
-                hero_other.set_position(obj->second.getPosition());
-                hero_other.set_rotation(obj->second.getRotation());
-                hero_other.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
-                window.draw(hero_other.get_sprite());
+                game::Mob hero_sprite_other;
+                hero_sprite_other.make_sprites();
+                hero_sprite_other.set_position(obj->second.getPosition());
+                hero_sprite_other.set_rotation(obj->second.getRotation());
+                hero_sprite_other.set_sprite(static_cast<Status_sprite_index>(obj->second.sprite_status));
+                window.draw(hero_sprite_other.get_sprite());
             }
         }
-
         /* ---- projectile render ---- */
         for (auto& obj: global_state.projectiles) {
             obj.second.get()->render(window);
         }
-
         window.display();
 	}
 }
@@ -353,13 +351,12 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     
-
-    //load map textures
+    /* --- load map textures --- */
     global_state.global_map.make_textures("Animations/map/map.png");
     global_state.global_map.make_map();
 
     sf::TcpSocket server;
-    /* IP addres of server */
+    /* --- IP addres of server --- */
     sf::IpAddress server_IP(127, 0, 0, 1);
     ushort port = 53000;
 
@@ -380,10 +377,10 @@ int main(int argc, char* argv[]) {
 
     get_initial_data(global_state, server);
 
-    /* Thread of network module */
+    /* --- Thread of network module --- */
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
-    /* Main thread of rendering module */
+    /* --- Main thread of rendering module --- */
     index_cli = std::stoi(argv[1]);
     render_window(ctrl_handler, global_state, player_count);
 
