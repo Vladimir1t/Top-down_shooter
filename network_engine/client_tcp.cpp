@@ -18,7 +18,7 @@ static sf::Clock clock_fps;
 static sf::Time delta_time;
 
 static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
-    sf::TcpSocket& server, ushort& player_count) {
+                            sf::TcpSocket& server, ushort& player_count) {
 
     sf::Packet incoming_state;
     sf::Packet outcoming_data;
@@ -52,6 +52,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
 
             uint64_t proj_count = 0;
             uint64_t proj_type = 0;
+            const uint64_t game_over = 0xDEAD;
             uint64_t id = 0;
             bool is_active;
             std::unordered_map<uint64_t, std::unique_ptr<game::updatable>>::iterator found_elem;
@@ -62,29 +63,35 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 incoming_state >> proj_type;
                 switch (proj_type)
                 {
-                case static_cast<uint64_t> (game::updatable_type::projectile_type):
+                case static_cast<uint64_t>(game::updatable_type::projectile_type):
                     incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
                     if (is_active){
                         found_elem = global_state.projectiles.find(unique_index);
-                        if (found_elem == global_state.projectiles.end()){
+                        if (found_elem == global_state.projectiles.end()) {
                             #ifdef DEBUG
                             std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
-                            #endif //DEBUG
+                            #endif // DEBUG
                             global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
                         }
                         else {
-                            tmp =  dynamic_cast<game::projectile*> (found_elem->second.get());
+                            tmp = dynamic_cast<game::projectile*>(found_elem->second.get());
                             tmp->base_.hitbox_.x = x;
                             tmp->base_.hitbox_.y = y;
                         }
                     }
-                    else{
+                    else {
                         #if DEBUG
                         std::cout << "deleting projectile with unique id: " << unique_index << std::endl;
-                        #endif //DEBUG
+                        #endif // DEBUG
                         global_state.projectiles.erase(unique_index);
                     }
                     break;
+                case game_over:
+                    {
+                        global_state.game_over = true;
+                        server.disconnect();
+                        break;
+                    }
                 default:
                     std::cout << "error: got default updatable type" << std::endl;
                     break;
@@ -162,6 +169,11 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
     int status_sprite = 1;
 
 	while (window.isOpen()) {
+
+        if (global_state.game_over.load()) {
+            game::Animated_game_over game_over("- GAME OVER -");
+            game_over.end_dispay(window, font, global_state);
+        }
         /* Drawing and handling key buttons */
 
         while (std::optional<sf::Event> event = window.pollEvent()) {

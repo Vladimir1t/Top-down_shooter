@@ -98,7 +98,7 @@ public:
                 }
             }
             int i = 0;
-            for (auto& client: _clients) {
+            for (auto&& client: _clients) {
                 if (_selector.isReady(client)){
                     if (client.receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
                         std::cout << "recieving error (maybe socket not connected)" << std::endl;
@@ -149,7 +149,7 @@ public:
     }
 
     void check_collisions(game_state_server& global_state) {
-        for (auto& [index, player]: global_state.player_objects) {
+        for (auto&& [index, player]: global_state.player_objects) {
             player._velocity_external = {0, 0};
             for (auto &wall: global_state.walls) {
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
@@ -166,18 +166,28 @@ public:
                                       player._velocity_external.y)) {
                     obj->frame_counter_ = obj->max_frames_;
                     player.health -= obj->damage_;
+                    if (player.health <= 0) {
+                        /* --- game over --- */
+                        create_messages(global_state, true);
+                        return;
+                    }
+                }
+            }
+            for (auto&& [index2, player2]: global_state.player_objects) {
+                if (index != index2) {
+                    resolve_collision(player._hitbox, player2._hitbox, player._velocity_external.x, player._velocity_external.y);
                 }
             }
         }
-        for (auto& st_obj: global_state.objects) {
-                projectile* obj;
-                obj = dynamic_cast<projectile*>(st_obj.get());
-                for (auto &wall: global_state.walls) {
-                    if (wall.intersects(obj->base_.hitbox_)) {
-                        obj->frame_counter_ = obj->max_frames_;
-                        //obj->active_ = false;
-                    }
+        for (auto&& st_obj: global_state.objects) {
+            projectile* obj;
+            obj = dynamic_cast<projectile*>(st_obj.get());
+            for (auto &wall: global_state.walls) {
+                /* --- collision walls with bullets --- */
+                if (wall.intersects(obj->base_.hitbox_)) {
+                    obj->frame_counter_ = obj->max_frames_;
                 }
+            }
         }
     }
 
@@ -185,13 +195,13 @@ public:
         global_state.update_state();
     }
 
-    void create_messages(game_state_server& global_state) {
+    void create_messages(game_state_server& global_state, bool game_over = false) {
         ushort client_count = _clients.size();
         // std::cout << "client count " << client_count << std::endl; 
         object* obj;
         uint64_t id;
         for (int i = 0; i < client_count; ++i) {
-            //writing players
+            // writing players
             _outcoming_messages[i] << client_count;
             for (int j = 0; j < client_count; ++j) {
                 obj = &(global_state.player_objects[j].second);
@@ -211,18 +221,23 @@ public:
                     << "\n\ts:" << obj->sprite_status << std::endl;
                 #endif
             }
-
-            //writing projectiles
+            // writing projectiles
             const projectile* tmp = 0;
             _outcoming_messages[i] << global_state.objects.size();
-            for(auto& x: global_state.objects){
+            if (game_over == true) {
+                const uint64_t flag_game_over = 0xDEAD;
+                _outcoming_messages[i] << flag_game_over;
+                continue;
+            }
+            for (auto&& x: global_state.objects) {
                 switch (x.get()->get_type())
                 {
                 case projectile_type:
                     _outcoming_messages[i] << static_cast<uint64_t>(projectile_type);
                     tmp = dynamic_cast<projectile*> (x.get());
                     std::cout << "writing projectile with id: " << tmp->id_ << " and unique index: " << tmp->unique_index << std::endl;
-                    _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();
+                    _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x 
+                                           << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();
                     break;
                 
                 default:

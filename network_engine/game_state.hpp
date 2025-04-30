@@ -73,7 +73,7 @@ public:
         return _hitbox.y + _hitbox.height / 2;
     }
 
-    object(int health = 100): _hitbox({0, 0, 64, 64}), health(health) { 
+    object(int health = 100): /* hitbox of mob */ _hitbox({12, 12, 52, 52}), health(health) { 
         /* Start coords */
         move({11 * 46, 11 * 46}); 
     }
@@ -85,7 +85,8 @@ public:
     }
 
     void update() {
-        move({_velocity_coeff.x * (_velocity_internal.x + _velocity_external.x), _velocity_coeff.y * (_velocity_internal.y + _velocity_external.y)});
+        move({_velocity_coeff.x * (_velocity_internal.x + _velocity_external.x),
+              _velocity_coeff.y * (_velocity_internal.y + _velocity_external.y)});
         rotate(sf::radians(_rotation_coeff * _rotation));
     }
 
@@ -264,10 +265,9 @@ private:
                     sprite.setPosition({13 * map_block_size, (wall_size + 10 + y) * map_block_size + block_num * 
                             (map_block_size * 10 + map_hole_size * map_block_size)});
                     _sprites.push_back(sprite);
-                    sf::Sprite sprite2(_textures[4]);
-                    sprite2.setPosition({17 * map_block_size, (wall_size + 10 + y) * map_block_size + block_num * 
+                    sprite.setPosition({17 * map_block_size, (wall_size + 10 + y) * map_block_size + block_num * 
                             (map_block_size * 10 + map_hole_size * map_block_size)});
-                    _sprites.push_back(sprite2);
+                    _sprites.push_back(sprite);
                 }
             }
         }
@@ -282,6 +282,7 @@ public:
     projectile_factory factory;
 
     Map global_map;  
+    std::atomic<bool> game_over{false};
 
     void create_from_settings(std::string proj_settings_filename){
         factory.read_settings(proj_settings_filename);
@@ -300,7 +301,7 @@ public:
     void create_from_settings(std::string proj_settings_filename){
         factory.read_settings(proj_settings_filename);
 
-        //magick nubers right now -> need to read from file
+        // magick nubers right now -> need to read from file
         const uint64_t map_size = 100;
         const float map_block_size = 46;
         const float map_hole_size = 6;
@@ -317,6 +318,7 @@ public:
 
         w = {0, map_size * map_block_size, 0, 5, map_size * map_block_size + 60};
         walls.push_back(w);
+    
         /* --- stone map --- */
         for (float block_num = 0; block_num < bloks_num_max; ++block_num) {
             w = {0, 10 * map_block_size, 10 * map_block_size + block_num * (map_block_size * 10 + map_hole_size * map_block_size),
@@ -365,21 +367,23 @@ public:
     void add_player() {
         player_objects.emplace_back();
         player_objects.back().first = next_player_unique_id++;
+        float start_move_coeff = static_cast<float>(next_player_unique_id);
         player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
+        player_objects.back().second.move({start_move_coeff, start_move_coeff});
     }
 
     void update_state() {
-        for(uint64_t i = 0; i < player_objects.size(); ++i){
+        for (uint64_t i = 0; i < player_objects.size(); ++i) {
             player_objects[i].second.update();
         }
 
-        for(auto it = objects.begin(); it != objects.end();){
+        for (auto&& it = objects.begin(); it != objects.end();) {
             /*
              * iterating trough updatable objects.
              * if update invalidates object it will be count as inactive on next update_status iteration 
              * and will be send to clients once with parameter active = -1
              */
-            if(it->get()->is_active()){
+            if (it->get()->is_active()) {
                 it->get()->update();
                 it++;
             }
@@ -478,6 +482,48 @@ public:
         current_sprite.setRotation(_rot);
 
         return current_sprite;
+    }
+};
+
+class Animated_game_over {
+public:
+    Animated_game_over(std::string message) : _message(message) {}
+
+    void end_dispay(sf::RenderWindow& window, const sf::Font& font, const game_state_client& global_state) {
+
+        sf::Clock delayClock;
+        while (window.isOpen() && delayClock.getElapsedTime().asSeconds() < wait_time) {
+            while (auto event = window.pollEvent()) {
+                if (event->is<sf::Event::Closed>()) {
+                    window.close();
+                }
+            }
+            window.clear();
+            global_state.global_map.render(window);
+            draw(window, font);
+            window.display();
+        }
+        window.close();
+        abort();
+        return;
+    }
+
+private:
+    std::string _message; 
+    const float wait_time = 3.0;
+
+    void draw(sf::RenderWindow& window, const sf::Font& font) {
+        sf::Text text(font);
+        text.setString(_message);
+        text.setCharacterSize(30); 
+        text.setFillColor(sf::Color::Red);
+        const float approx_text_width = 300.0f; 
+        const float approx_text_height = 75.0f;
+
+        sf::Vector2f center = window.getView().getCenter();
+        text.setPosition({center.x - approx_text_width / 2, 
+                          center.y - approx_text_height / 2});
+        window.draw(text);
     }
 };
 }

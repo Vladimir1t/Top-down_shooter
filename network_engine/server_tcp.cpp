@@ -16,11 +16,11 @@ int Receive() {
     try {
         global_state.create_from_settings("data/projectile.txt");
     }
-    catch(std::ios::failure& e){
+    catch(std::ios::failure& e) {
         std::cout << e.what() << std::endl;
         return -1;
     }
-    catch(sf::Exception& e){
+    catch(sf::Exception& e) {
         std::cout << e.what() << std::endl;
         return -1;
     }
@@ -28,9 +28,9 @@ int Receive() {
     sf::Time timeout = sf::milliseconds(15);
     /* Set port of tcp server */
     game::TCP_server server{53000, timeout};
-    if(server.init() == -1){
+    if (server.init() == -1) {
         return -1;
-    };
+    }
 
     while (true) {
         server.wait_and_handle(global_state);
