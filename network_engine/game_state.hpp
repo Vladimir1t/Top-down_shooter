@@ -73,7 +73,7 @@ public:
         return _hitbox.y + _hitbox.height / 2;
     }
 
-    object(int health = 100): /* hitbox of mob */ _hitbox({12, 12, 52, 52}), health(health) { 
+    object(int health = 100): /* hitbox of mob */ _hitbox({16, 12, 32, 38}), health(health) { 
         /* Start coords */
         move({11 * 46, 11 * 46}); 
     }
