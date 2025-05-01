@@ -26,6 +26,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     while (true) {
         if (server.receive(incoming_state) != sf::Socket::Status::Done) {
             std::cerr << "Error while recieving" << std::endl;
+            abort();
         }
         else {
             delta_time = clock_fps.restart();
@@ -34,7 +35,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             float x, y, rot;
             int sprite_status, health;
             incoming_state >> player_count;
-            // std::cout << "rn " << player_count << " are playing" << std::endl;
 
             std::lock_guard<std::mutex> lock(state_mutex);
 
@@ -118,8 +118,9 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
         }
 
         if (change_mask != 0){
-            if(server.send(outcoming_data) != sf::Socket::Status::Done) {
+            if (server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "error while sending to server\n";
+                abort();
             }
         }
 
@@ -136,8 +137,7 @@ static void change_status_sprite(sf::Clock& clock, int& status_sprite, game::con
     clock.restart();
 }
 
-static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state,
-    ushort& player_count) {
+static void render_window(game::control_struct& ctrl_handler, const game::game_state_client& global_state) {
 
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Game Shooter");
     window.setVerticalSyncEnabled(true);
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
         std::ref(server), std::ref(player_count));
     /* --- Main thread of rendering module --- */
     index_cli = std::stoi(argv[1]);
-    render_window(ctrl_handler, global_state, player_count);
+    render_window(ctrl_handler, global_state);
 
     network_thread.join();    
 

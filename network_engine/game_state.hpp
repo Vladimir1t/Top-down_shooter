@@ -6,6 +6,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <atomic>
 
 #include "game_objects.hpp"
 
@@ -73,7 +74,7 @@ public:
         return _hitbox.y + _hitbox.height / 2;
     }
 
-    object(int health = 100): /* hitbox of mob */ _hitbox({16, 12, 32, 38}), health(health) { 
+    object(int health = 100): health(health), /* hitbox of mob */ _hitbox({16, 12, 32, 38}) { 
         /* Start coords */
         move({11 * 46, 11 * 46}); 
     }

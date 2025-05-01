@@ -259,7 +259,7 @@ public:
             }
             catch (std::bad_optional_access& e) {
                 std::cerr << e.what();
-                break;
+                abort();
             }
         }
     }
