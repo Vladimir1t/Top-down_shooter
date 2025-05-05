@@ -26,7 +26,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     while (true) {
         if (server.receive(incoming_state) != sf::Socket::Status::Done) {
             std::cerr << "Error while recieving" << std::endl;
-            abort();
         }
         else {
             delta_time = clock_fps.restart();
@@ -120,7 +119,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
         if (change_mask != 0){
             if (server.send(outcoming_data) != sf::Socket::Status::Done) {
                 std::cout << "error while sending to server\n";
-                abort();
             }
         }
 
