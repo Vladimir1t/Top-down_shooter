@@ -21,12 +21,14 @@ enum class Status_sprite_index {
     LEFT2  = 41,
 };
 
+#ifdef 0
 namespace sf {
 /* --- overloading operator << for size_t */
 inline Packet& operator<<(Packet& packet, size_t value) {
     return packet << static_cast<uint64_t>(value);
 }
 }
+#endif
 
 namespace game {
 
