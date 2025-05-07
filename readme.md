@@ -70,8 +70,8 @@ Technologies are used:
 N - номер игрока.
 
 ---
-![Презентация](Top-Down_Shooter.pdf)
-Презентация по игре 
+[Презентация](Top-Down_Shooter.pdf)
+- Презентация по игре 
 ---
 
 ## Участники 
