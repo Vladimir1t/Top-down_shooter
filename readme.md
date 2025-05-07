@@ -42,6 +42,7 @@ Technologies are used:
 
 ---
 ![Пример графики](Animations/example.png)
+![Пример графики2](Animations/example2.png)
 - Пример рендеринга игры (карта, fps, здоровье игрока и сами персонажи)
 ---
 
