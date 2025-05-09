@@ -36,16 +36,15 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             float x, y, rot;
             int sprite_status, health;
             incoming_state >> player_count;
-            std::cout << "player_count = " << player_count << '\n';
 
             std::lock_guard<std::mutex> lock(state_mutex);
 
             for (int i = 0; i < player_count; ++i) {
                 incoming_state >> unique_index >> x >> y >> rot >> sprite_status >> health;
-                // std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
-                //           << rot << "\n\ts: " << sprite_status << std::endl;
-                std::cout << "unique_index = " << unique_index << '\n';
-                std::cout << "coords = " << x << ' ' << y << '\n';
+                #ifdef DEBUG
+                std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
+                          << rot << "\n\ts: " << sprite_status << std::endl;
+                #endif
                 game::object& obj = global_state.player_objects[unique_index];
                 /* --- information about each mob --- */
                 obj.setPosition({x, y});
@@ -63,7 +62,6 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             game::projectile* tmp = 0;
 
             incoming_state >> proj_count;
-            std::cout << "proj_count = " << proj_count << '\n';
             for (uint64_t i = 0; i < proj_count; ++i) {
                 incoming_state >> proj_type;
                 switch (proj_type)
@@ -71,17 +69,14 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 case static_cast<uint64_t>(game::updatable_type::projectile_type):
                     incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
                     if (is_active) {
-                        std::cout << "here [1]\n";
                         found_elem = global_state.projectiles.find(unique_index);
                         if (found_elem == global_state.projectiles.end()) {
-                            std::cout << "here [2]\n";
                             #ifdef DEBUG
                             std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
                             #endif // DEBUG
                             global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
                         }
                         else {
-                            std::cout << "here [3]\n";
                             tmp = dynamic_cast<game::projectile*>(found_elem->second.get());
                             tmp->base_.hitbox_.x = x;
                             tmp->base_.hitbox_.y = y;
@@ -97,6 +92,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 case game_over:
                     {
                         global_state.game_over = true;
+                        std::cout << "END\n";
                         server.disconnect();
                         break;
                     }

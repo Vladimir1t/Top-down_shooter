@@ -217,14 +217,13 @@ public:
     }
 
     void create_messages(game_state_server& global_state, std::mutex& state_mutex, int game_over = false) {
-        std::lock_guard<std::mutex> lock(state_mutex);
-
+    
         ushort client_count = _clients.size();
         ushort players_count = client_count + global_state.player_objects_mobs.size();
-        // std::cout << "client count " << client_count << std::endl; 
         object* obj;
         uint64_t id;
         for (int i = 0; i < client_count; ++i) {
+            std::lock_guard<std::mutex> lock(state_mutex);
             // writing players
             _outcoming_messages[i] << players_count;
             for (int j = 0; j < client_count; ++j) {
@@ -259,6 +258,7 @@ public:
             // writing projectiles
             const projectile* tmp = 0;
             _outcoming_messages[i] << global_state.objects.size();
+            /* -- game over --- */
             if (game_over == true) {
                 const uint64_t flag_game_over = 0xDEAD;
                 _outcoming_messages[i] << flag_game_over;

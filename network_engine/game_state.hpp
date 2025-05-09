@@ -33,7 +33,7 @@ inline Packet& operator<<(Packet& packet, size_t value) {
 
 namespace game {
 
-const int NUM_MOBS = 1;
+const int NUM_MOBS = 2;
 
 enum packet_type {
     move_bit = 0x1,
@@ -378,7 +378,9 @@ public:
 
     void add_player() {
         player_objects.emplace_back();
+        #ifdef DEBUG
         std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
+        #endif
         player_objects.back().first = next_player_unique_id++;
         float start_move_coeff = static_cast<float>(next_player_unique_id);
         player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
@@ -387,7 +389,9 @@ public:
 
     void add_mob(sf::Vector2f offset) {
         player_objects_mobs.emplace_back();
+        #ifdef DEBUG
         std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
+        #endif
         player_objects_mobs.back().first = next_player_unique_id++;
         player_objects_mobs.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
         player_objects_mobs.back().second.move(offset);
@@ -433,9 +437,37 @@ public:
         }
     }
     void shoot_mob(std::pair<uint64_t, object>& mob) {
+        float min_distance_sq = std::numeric_limits<float>::max();
+        sf::Vector2f nearest_player_pos;
+        bool found_player = false;
+        
         for (auto&& player : player_objects) {
-            // вычисление расстояния до каждого из игроков
-            // стрельба
+            float dx = player.second.get_center_x() - mob.second.get_center_x();
+            float dy = player.second.get_center_y() - mob.second.get_center_y();
+            float distance_sq = dx * dx + dy * dy;
+
+            if (distance_sq < min_distance_sq) {
+                min_distance_sq = distance_sq;
+                nearest_player_pos = {player.second.get_center_x(), player.second.get_center_y()};
+                found_player = true;
+            }
+        }
+
+        if (found_player) {
+            float dx = nearest_player_pos.x - mob.second.get_center_x();
+            float dy = nearest_player_pos.y - mob.second.get_center_y();
+            float angle = std::atan2(dy, dx);
+
+            create_projectile(mob.second.get_center_x(), 
+                              mob.second.get_center_y(), 
+                              angle, 
+                              mob.first);
+
+            #ifdef DEBUG
+                std::cout << "Mob " << mob.first << " shooting at angle: " << angle 
+                          << " towards player at (" << nearest_player_pos.x 
+                          << ", " << nearest_player_pos.y << ")" << std::endl;
+            #endif
         }
     }
 

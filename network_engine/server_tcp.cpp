@@ -62,14 +62,14 @@ int Receive(game::game_state_server& global_state) {
 /** Thread for handling mobs */
 int Run_mobs(game::game_state_server& global_state) {
 
-    for (int i = 0; i < game::NUM_MOBS; ++i) {
+    for (float i = 0; i < game::NUM_MOBS; ++i) {
         std::lock_guard<std::mutex> lock(state_mutex);
-        global_state.add_mob({10, 10}); 
+        global_state.add_mob({10 + i, 10 + i}); 
     }
 
     sf::Clock clock_shoot;
     sf::Clock clock_move;
-    const float shoot_interval = 0.9f;  
+    const float shoot_interval = 1.0f;  
     const float move_interval = 0.04f;  
 
     while (true) {
