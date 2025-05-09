@@ -223,7 +223,7 @@ public:
         object* obj;
         uint64_t id;
         for (int i = 0; i < client_count; ++i) {
-            std::lock_guard<std::mutex> lock(state_mutex);
+            //std::lock_guard<std::mutex> lock(state_mutex);
             // writing players
             _outcoming_messages[i] << players_count;
             for (int j = 0; j < client_count; ++j) {
