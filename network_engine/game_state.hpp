@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include <atomic>
+#include <cstdlib>
 
 #include "game_objects.hpp"
 
@@ -21,7 +22,7 @@ enum class Status_sprite_index {
     LEFT2  = 41,
 };
 
-#ifdef 0
+#if 1
 namespace sf {
 /* --- overloading operator << for size_t */
 inline Packet& operator<<(Packet& packet, size_t value) {
@@ -31,6 +32,8 @@ inline Packet& operator<<(Packet& packet, size_t value) {
 #endif
 
 namespace game {
+
+const int NUM_MOBS = 1;
 
 enum packet_type {
     move_bit = 0x1,
@@ -74,6 +77,10 @@ public:
     }
     float get_center_y() {
         return _hitbox.y + _hitbox.height / 2;
+    }
+
+    sf::Vector2f get_position() {
+        return {_hitbox.x + _hitbox.width / 2, _hitbox.y + _hitbox.height / 2};
     }
 
     object(int health = 100): health(health), /* hitbox of mob */ _hitbox({16, 12, 32, 38}) { 
@@ -211,8 +218,8 @@ public:
             std::cout << "wall: " << id << ' ' << x << ' ' << ' '
                       << y << ' ' << width << ' ' << height << std::endl;
 
-            game::Wall<float> w = {id, x, y, width, height};
-            walls.push_back(w);
+            game::Wall<float> wall = {id, x, y, width, height};
+            walls.push_back(wall);
         }
     }
 
@@ -296,8 +303,10 @@ class game_state_server final {
 public:
     uint64_t next_player_unique_id = 0;
     std::vector<std::pair<uint64_t, object>> player_objects;
+    std::vector<std::pair<uint64_t, object>> player_objects_mobs;
     std::vector<Wall<float>> walls;
 
+    /** bullets */
     std::vector<std::unique_ptr<updatable>> objects;
     projectile_factory factory;
 
@@ -369,15 +378,73 @@ public:
 
     void add_player() {
         player_objects.emplace_back();
+        std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
         player_objects.back().first = next_player_unique_id++;
         float start_move_coeff = static_cast<float>(next_player_unique_id);
         player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
         player_objects.back().second.move({start_move_coeff, start_move_coeff});
     }
 
+    void add_mob(sf::Vector2f offset) {
+        player_objects_mobs.emplace_back();
+        std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
+        player_objects_mobs.back().first = next_player_unique_id++;
+        player_objects_mobs.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
+        player_objects_mobs.back().second.move(offset);
+    }
+
+    void move_mob(std::pair<uint64_t, object>& mob) {
+        float min_distance_sq = std::numeric_limits<float>::max();
+        sf::Vector2f nearest_player_pos;
+        bool found_player = false;
+
+        for (auto&& player : player_objects) {
+            float dx = player.second.get_center_x() - mob.second.get_center_x();
+            float dy = player.second.get_center_y() - mob.second.get_center_y();
+            float distance_sq = (dx * dx) + (dy * dy);
+
+            if (distance_sq < min_distance_sq) {
+                min_distance_sq = distance_sq;
+                nearest_player_pos = {player.second.get_center_x(), player.second.get_center_y()};
+                found_player = true;
+            }
+        }
+
+        /* if 100 < distance > 600 */
+        if (found_player && min_distance_sq > 100 * 100 && min_distance_sq < 600 * 600) {
+            sf::Vector2f direction = nearest_player_pos - mob.second.get_position();
+            float length = std::sqrt(direction.x*direction.x + direction.y*direction.y);
+
+            if (length > 0) {
+                direction /= length;
+                mob.second.move(direction);
+
+                if (std::abs(direction.x) > std::abs(direction.y)) {
+                    mob.second.sprite_status = (direction.x > 0) ? 
+                        static_cast<int>(Status_sprite_index::RIGHT) : 
+                        static_cast<int>(Status_sprite_index::LEFT);
+                } 
+                else {
+                    mob.second.sprite_status = (direction.y > 0) ? 
+                        static_cast<int>(Status_sprite_index::DOWN) : 
+                        static_cast<int>(Status_sprite_index::UP);
+                }
+            }
+        }
+    }
+    void shoot_mob(std::pair<uint64_t, object>& mob) {
+        for (auto&& player : player_objects) {
+            // вычисление расстояния до каждого из игроков
+            // стрельба
+        }
+    }
+
     void update_state() {
         for (uint64_t i = 0; i < player_objects.size(); ++i) {
             player_objects[i].second.update();
+        }
+        for (uint64_t i = 0; i < player_objects_mobs.size(); ++i) {
+            player_objects_mobs[i].second.update();
         }
 
         for (auto&& it = objects.begin(); it != objects.end();) {

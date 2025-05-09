@@ -12,10 +12,12 @@
 
 #include "game_state.hpp"
 
-static std::mutex state_mutex;
-static uint64_t index_cli;
-static sf::Clock clock_fps;
-static sf::Time delta_time;
+namespace {
+std::mutex state_mutex;
+uint64_t index_cli;
+sf::Clock clock_fps;
+sf::Time delta_time;
+}
 
 static void network_handler(game::control_struct& ctrl_handler, game::game_state_client& global_state,
                             sf::TcpSocket& server, ushort& player_count) {
@@ -34,6 +36,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             float x, y, rot;
             int sprite_status, health;
             incoming_state >> player_count;
+            std::cout << "player_count = " << player_count << '\n';
 
             std::lock_guard<std::mutex> lock(state_mutex);
 
@@ -41,6 +44,8 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 incoming_state >> unique_index >> x >> y >> rot >> sprite_status >> health;
                 // std::cout << "Player: " << unique_index << "\n\tx: " << x << "\n\ty: " << y << "\n\tr: " 
                 //           << rot << "\n\ts: " << sprite_status << std::endl;
+                std::cout << "unique_index = " << unique_index << '\n';
+                std::cout << "coords = " << x << ' ' << y << '\n';
                 game::object& obj = global_state.player_objects[unique_index];
                 /* --- information about each mob --- */
                 obj.setPosition({x, y});
@@ -58,21 +63,25 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             game::projectile* tmp = 0;
 
             incoming_state >> proj_count;
+            std::cout << "proj_count = " << proj_count << '\n';
             for (uint64_t i = 0; i < proj_count; ++i) {
                 incoming_state >> proj_type;
                 switch (proj_type)
                 {
                 case static_cast<uint64_t>(game::updatable_type::projectile_type):
                     incoming_state >> id >> unique_index >> is_active >> x >> y >> rot;
-                    if (is_active){
+                    if (is_active) {
+                        std::cout << "here [1]\n";
                         found_elem = global_state.projectiles.find(unique_index);
                         if (found_elem == global_state.projectiles.end()) {
+                            std::cout << "here [2]\n";
                             #ifdef DEBUG
                             std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
                             #endif // DEBUG
                             global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
                         }
                         else {
+                            std::cout << "here [3]\n";
                             tmp = dynamic_cast<game::projectile*>(found_elem->second.get());
                             tmp->base_.hitbox_.x = x;
                             tmp->base_.hitbox_.y = y;
@@ -342,8 +351,8 @@ static void get_initial_data(game::game_state_client& global_state, sf::TcpSocke
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "You should write the correct index of client [from 0 to N]\n";
+    if (argc != 2 || std::stoi(argv[1]) < game::NUM_MOBS) {
+        std::cerr << "You should write the correct index of client [from " << game::NUM_MOBS << " to N]\n";
         return -1;
     }
     
@@ -384,14 +393,13 @@ int main(int argc, char* argv[]) {
         std::cout << "Conntcted to server on " << server.getRemoteAddress().value() <<
             " and port " << server.getRemotePort() << std::endl;
     }
-
     get_initial_data(global_state, server);
-
     /* --- Thread of network module --- */
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
     /* --- Main thread of rendering module --- */
     index_cli = std::stoi(argv[1]);
+
     render_window(ctrl_handler, global_state);
 
     network_thread.join();    

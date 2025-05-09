@@ -6,6 +6,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <mutex>
 
 #include "game_state.hpp"
 
@@ -16,7 +17,7 @@ bool resolve_collision(game::AABB<float>& player_box, const game::AABB<float>& o
     if (!player_box.intersects(obstacle)) {
         #ifdef DEBUG
             std::cout << "player " << player_box.center().x << ' ' << player_box.center().y << '\n' << "does not intersect with wall "
-                        << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
+                      << obstacle.x << ' ' << obstacle.y << ' ' << obstacle.width << ' ' << obstacle.height << '\n';
         #endif
         return false;
     }
@@ -55,7 +56,7 @@ private:
     sf::Time _timeout;
 
 public:
-    //port number and timeout in milliseconds (0 for infinity)
+    // port number and timeout in milliseconds (0 for infinity)
     TCP_server(ushort port, sf::Time timeout): _port(port), _timeout(timeout) {}; 
     
     int init() {
@@ -69,7 +70,7 @@ public:
         return 0;
     }
 
-    void wait_and_handle(game_state_server& global_state) {
+    void wait_and_handle(game_state_server& global_state, std::mutex& state_mutex) {
         if (_selector.wait(_timeout)) { 
             // handling all connections
             if (_selector.isReady(_listener)){
@@ -82,23 +83,22 @@ public:
                 }
                 else {
                     std::cerr << "Accepted client on " << (client).getRemoteAddress().value() <<
-                        " and port " << (client).getRemotePort() << std::endl;
+                                 " and port " << (client).getRemotePort() << std::endl;
                     _selector.add(client);
                     _clients.push_back(std::move(client)); 
                     _incoming_messages.emplace_back(); // adding new message packet to same index as created client
                     _outcoming_messages.emplace_back();
 
+                    std::lock_guard<std::mutex> lock(state_mutex);
                     // creating starting message for each client
                     _outcoming_messages.back() << static_cast<uint64_t>(global_state.walls.size());
-                    for(auto& w: global_state.walls){
+                    for (auto& w: global_state.walls){
                         _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
                     }
-
                     global_state.add_player();
                 }
             }
-            int i = 0;
-            for (auto&& client: _clients) {
+            for (int i = 0; auto&& client: _clients) {
                 if (_selector.isReady(client)){
                     if (client.receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
                         std::cout << "recieving error (maybe socket not connected)" << std::endl;
@@ -113,7 +113,7 @@ public:
         }
     }
 
-    void read_packets(game_state_server& global_state) {
+    void read_packets(game_state_server& global_state, std::mutex& state_mutex) {
         int move_x, move_y, rotate, sprite_status;
         uint64_t incoming_packet_type;
         for (uint64_t i = 0; i < _clients.size(); ++i) {
@@ -128,6 +128,7 @@ public:
                         std::cout << i << ": got move message: x: " << move_x << " y: "
                              << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
                     #endif // DEBUG
+                    std::lock_guard<std::mutex> lock(state_mutex);
                     global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
                     global_state.player_objects[i].second.sprite_status = sprite_status;
                 }
@@ -135,10 +136,11 @@ public:
                     game::mouse_input mouse;
                     uint64_t id = 0;
                     _incoming_messages[i] >> mouse.x >> mouse.y >> mouse.angle >> id;
-                    #if DEBUG
+                    #ifdef DEBUG
                         std::cout << i << ": got mouse message: x: " << mouse.x << " y: "
                                 << mouse.y << " angle: " << mouse.angle << " id: " << id << std::endl;
                     #endif // DEBUG
+                    std::lock_guard<std::mutex> lock(state_mutex);
                     global_state.create_projectile(global_state.player_objects[i].second.get_center_x(),
                                                    global_state.player_objects[i].second.get_center_y(),
                                                    mouse.angle, id);
@@ -148,8 +150,11 @@ public:
         }
     }
 
-    void check_collisions(game_state_server& global_state) {
-        for (auto&& [index, player]: global_state.player_objects) {
+    void check_collisions_players(game_state_server& global_state,
+                                  std::vector<std::pair<uint64_t, object>>& player_objects, 
+                                  std::mutex& state_mutex) {
+
+        for (auto&& [index, player]: player_objects) {
             player._velocity_external = {0, 0};
             for (auto &wall: global_state.walls) {
                 resolve_collision(player._hitbox, wall, player._velocity_external.x, player._velocity_external.y);
@@ -160,7 +165,7 @@ public:
                 /* --- hero's own bullets --- */
                 if (index == obj->id_)
                     continue;
-                // do something with hit
+
                 if (resolve_collision(player._hitbox, obj->base_.hitbox_,
                                       player._velocity_external.x,
                                       player._velocity_external.y)) {
@@ -168,15 +173,30 @@ public:
                     player.health -= obj->damage_;
                     if (player.health <= 0) {
                         /* --- game over --- */
-                        create_messages(global_state, true);
+                        create_messages(global_state, state_mutex, true);
                         return;
                     }
                 }
             }
-            for (auto&& [index2, player2]: global_state.player_objects) {
+            for (auto&& [index2, player2]: player_objects) {
                 if (index != index2) {
-                    resolve_collision(player._hitbox, player2._hitbox, player._velocity_external.x, player._velocity_external.y);
+                    resolve_collision(player._hitbox, player2._hitbox, player._velocity_external.x,
+                                      player._velocity_external.y);
                 }
+            }
+        }
+    }
+
+    void check_collisions(game_state_server& global_state, std::mutex& state_mutex) {
+        std::lock_guard<std::mutex> lock(state_mutex);
+
+        check_collisions_players(global_state, global_state.player_objects, state_mutex);
+        check_collisions_players(global_state, global_state.player_objects_mobs, state_mutex);
+
+        for (auto&& [index2, mob]: global_state.player_objects_mobs) {
+            for (auto&& [index, player]: global_state.player_objects) {
+                resolve_collision(player._hitbox, mob._hitbox, player._velocity_external.x,
+                                  player._velocity_external.y);
             }
         }
         for (auto&& st_obj: global_state.objects) {
@@ -191,18 +211,22 @@ public:
         }
     }
 
-    void update_state(game_state_server& global_state) {
+    void update_state(game_state_server& global_state, std::mutex& state_mutex) {
+        std::lock_guard<std::mutex> lock(state_mutex);
         global_state.update_state();
     }
 
-    void create_messages(game_state_server& global_state, bool game_over = false) {
+    void create_messages(game_state_server& global_state, std::mutex& state_mutex, int game_over = false) {
+        std::lock_guard<std::mutex> lock(state_mutex);
+
         ushort client_count = _clients.size();
+        ushort players_count = client_count + global_state.player_objects_mobs.size();
         // std::cout << "client count " << client_count << std::endl; 
         object* obj;
         uint64_t id;
         for (int i = 0; i < client_count; ++i) {
             // writing players
-            _outcoming_messages[i] << client_count;
+            _outcoming_messages[i] << players_count;
             for (int j = 0; j < client_count; ++j) {
                 obj = &(global_state.player_objects[j].second);
                 id = global_state.player_objects[j].first;
@@ -220,6 +244,17 @@ public:
                     << "\n\tr:" << obj->getRotation().asRadians()
                     << "\n\ts:" << obj->sprite_status << std::endl;
                 #endif
+            }
+            /* --- for mobs --- */
+            for (int j = client_count; j < players_count; ++j) {
+                obj = &(global_state.player_objects_mobs[j - client_count].second);
+                id = global_state.player_objects_mobs[j].first;
+                _outcoming_messages[i] << id
+                                       << obj->getPosition().x
+                                       << obj->getPosition().y
+                                       << obj->getRotation().asRadians()
+                                       << obj->sprite_status
+                                       << obj->health;
             }
             // writing projectiles
             const projectile* tmp = 0;
