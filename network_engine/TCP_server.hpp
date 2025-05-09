@@ -171,11 +171,6 @@ public:
                                       player._velocity_external.y)) {
                     obj->frame_counter_ = obj->max_frames_;
                     player.health -= obj->damage_;
-                    if (player.health <= 0) {
-                        /* --- game over --- */
-                        create_messages(global_state, state_mutex, true);
-                        return;
-                    }
                 }
             }
             for (auto&& [index2, player2]: player_objects) {
@@ -197,6 +192,11 @@ public:
             for (auto&& [index, player]: global_state.player_objects) {
                 resolve_collision(player._hitbox, mob._hitbox, player._velocity_external.x,
                                   player._velocity_external.y);
+                if (player.health <= 0) {
+                    /* --- game over --- */
+                    create_messages(global_state, state_mutex, true);
+                    return;
+                }
             }
         }
         for (auto&& st_obj: global_state.objects) {

@@ -76,7 +76,8 @@ int Run_mobs(game::game_state_server& global_state) {
         if (clock_move.getElapsedTime().asSeconds() > move_interval) {
             for (auto&& mob : global_state.player_objects_mobs) {
                 std::lock_guard<std::mutex> lock(state_mutex);
-                global_state.move_mob(mob);
+                if (mob.second.health >= 100)
+                    global_state.move_mob(mob);
             }
             clock_move.restart();
         }
@@ -84,7 +85,8 @@ int Run_mobs(game::game_state_server& global_state) {
         if (clock_shoot.getElapsedTime().asSeconds() > shoot_interval) {
             for (auto&& mob : global_state.player_objects_mobs) {
                 std::lock_guard<std::mutex> lock(state_mutex);
-                global_state.shoot_mob(mob);
+                if (mob.second.health >= 100)
+                    global_state.shoot_mob(mob);
             }
             clock_shoot.restart();
         }
