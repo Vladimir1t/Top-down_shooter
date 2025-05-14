@@ -25,11 +25,26 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
     sf::Packet incoming_state;
     sf::Packet outcoming_data;
 
-    while (true) {
-        if (server.receive(incoming_state) != sf::Socket::Status::Done) {
-            std::cerr << "Error while recieving" << std::endl;
+    sf::Socket::Status status;
+
+    while (!global_state.game_over.load() && !global_state.terminate.load()) {
+        status = server.receive(incoming_state);
+        
+        switch (status)
+        {
+        case sf::Socket::Status::Done:
+            break;
+        case sf::Socket::Status::Disconnected:
+            std::cout << "server disconnected" << std::endl;
+            global_state.terminate.store(true);
+            break;
+        default:
+            std::cout << "unknown problem with server" << std::endl;
+            global_state.terminate.store(true);
+            break;
         }
-        else {
+
+        if(status == sf::Socket::Status::Done) {
             delta_time = clock_fps.restart();
 
             uint64_t unique_index;
@@ -48,7 +63,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 game::object& obj = global_state.player_objects[unique_index];
                 /* --- information about each mob --- */
                 obj.setPosition({x, y});
-                obj.setRotation(sf::radians(rot));
+                obj.setRotation(sf::radians(0)); //was rot
                 obj.sprite_status = sprite_status;
                 obj.health = health;
             }
@@ -62,6 +77,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
             game::projectile* tmp = 0;
 
             incoming_state >> proj_count;
+
             for (uint64_t i = 0; i < proj_count; ++i) {
                 incoming_state >> proj_type;
                 switch (proj_type)
@@ -72,9 +88,10 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                         found_elem = global_state.projectiles.find(unique_index);
                         if (found_elem == global_state.projectiles.end()) {
                             #ifdef DEBUG
-                            std::cout << "creating projectile with id: " << id << "and unique index: " << unique_index << std::endl;
+                            std::cout << "creating projectile with id: " << id << " and unique index: " << unique_index << std::endl;
                             #endif // DEBUG
                             global_state.projectiles[unique_index] = global_state.factory.get_projectile(x, y, rot, id);
+                            // std::cout << "done." << std::endl;
                         }
                         else {
                             tmp = dynamic_cast<game::projectile*>(found_elem->second.get());
@@ -87,6 +104,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                         std::cout << "deleting projectile with unique id: " << unique_index << std::endl;
                         #endif // DEBUG
                         global_state.projectiles.erase(unique_index);
+                        // std::cout << "done." << std::endl;
                     }
                     break;
                 case game_over:
@@ -102,6 +120,7 @@ static void network_handler(game::control_struct& ctrl_handler, game::game_state
                 }
             }
         }
+
 
         uint64_t change_mask = 0;
         if (ctrl_handler.move_changed) change_mask |= game::packet_type::move_bit;
@@ -171,11 +190,12 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
 
     int status_sprite = 1;
 
-	while (window.isOpen()) {
+	while (window.isOpen() && !global_state.terminate.load()) {
 
         if (global_state.game_over.load()) {
             game::Animated_game_over game_over("- GAME OVER -");
             game_over.end_dispay(window, font, global_state);
+            return;
         }
         /* Drawing and handling key buttons */
 
@@ -332,6 +352,8 @@ static void render_window(game::control_struct& ctrl_handler, const game::game_s
         }
         window.display();
 	}
+
+    std::cout << "fallig from window" << std::endl;
 }
 
 /* --- Recieving initial information --- */

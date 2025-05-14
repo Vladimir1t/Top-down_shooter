@@ -100,9 +100,16 @@ public:
             }
             for (int i = 0; auto&& client: _clients) {
                 if (_selector.isReady(client)){
-                    if (client.receive(_incoming_messages[i]) != sf::Socket::Status::Done) {
-                        std::cout << "recieving error (maybe socket not connected)" << std::endl;
-                        _incoming_messages[i].clear();
+                    sf::Socket::Status status = client.receive(_incoming_messages[i]);
+                    switch (status)
+                    {
+                    case sf::Socket::Status::Done:
+                        break;
+                    case sf::Socket::Status::Disconnected:
+                        std::cout << "Client " << i << " disconnected" << std::endl;
+                        break;                    
+                    default:
+                        break;
                     }
                 }
                 ++i;
@@ -129,7 +136,7 @@ public:
                              << move_y << " rot: " << rotate << " sprite_status: " << sprite_status << std::endl;
                     #endif // DEBUG
                     std::lock_guard<std::mutex> lock(state_mutex);
-                    global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, rotate);
+                    global_state.player_objects[i].second.set_internal_velocity_and_rot({move_x, move_y}, 0);
                     global_state.player_objects[i].second.sprite_status = sprite_status;
                 }
                 if (incoming_packet_type & game::packet_type::mouse_bit) {
@@ -235,9 +242,10 @@ public:
                                        << obj->getRotation().asRadians()
                                        << obj->sprite_status
                                        << obj->health;
+                
                 #ifdef DEBUG
-                    std::cout << "player № " << i 
-                    << "\n\tid:" << id
+                    std::cout << "player № " << j 
+                    << "\n\tid:"<< id
                     << "\n\tx:" << obj->getPosition().x
                     << "\n\ty:" << obj->getPosition().y
                     << "\n\tr:" << obj->getRotation().asRadians()
@@ -247,13 +255,21 @@ public:
             /* --- for mobs --- */
             for (int j = client_count; j < players_count; ++j) {
                 obj = &(global_state.player_objects_mobs[j - client_count].second);
-                id = global_state.player_objects_mobs[j].first;
+                id = global_state.player_objects_mobs[j - client_count].first;
                 _outcoming_messages[i] << id
                                        << obj->getPosition().x
                                        << obj->getPosition().y
                                        << obj->getRotation().asRadians()
                                        << obj->sprite_status
                                        << obj->health;
+                #ifdef DEBUG
+                std::cout << "mob № " << j
+                << "\n\tid:"<< id
+                << "\n\tx:" << obj->getPosition().x
+                << "\n\ty:" << obj->getPosition().y
+                << "\n\tr:" << obj->getRotation().asRadians()
+                << "\n\ts:" << obj->sprite_status << std::endl;
+                #endif //DEBUG
             }
             // writing projectiles
             const projectile* tmp = 0;
@@ -270,7 +286,9 @@ public:
                 case projectile_type:
                     _outcoming_messages[i] << static_cast<uint64_t>(projectile_type);
                     tmp = dynamic_cast<projectile*> (x.get());
+                    #ifdef DEBUG
                     std::cout << "writing projectile with id: " << tmp->id_ << " and unique index: " << tmp->unique_index << std::endl;
+                    #endif //DEBUG
                     _outcoming_messages[i] << tmp->id_ << tmp->unique_index << tmp->active_ << tmp->base_.hitbox_.x 
                                            << tmp->base_.hitbox_.y << tmp->base_.velocity_.angle().asRadians();
                     break;
@@ -288,12 +306,14 @@ public:
         for (auto&& it_client = _clients.begin(); it_client != _clients.end(); ++it_client, ++i) {
             try {
                 if (it_client->send(_outcoming_messages[i]) != sf::Socket::Status::Done) {
-                    std::cerr << "Error while sending to " << it_client->getRemoteAddress().value() 
+                    std::optional<sf::IpAddress> addr = it_client->getRemoteAddress();
+                    std::cerr << "Error while sending to " << static_cast<std::string>(addr.has_value()?(addr.value().toString()):("disconnected"))
                         << " " << it_client->getLocalPort() << std::endl;
                 }
             }
             catch (std::bad_optional_access& e) {
-                std::cerr << e.what();
+                std::cerr << e.what() << std::endl;
+                std::cout << "aborting..." << std::endl;
                 abort();
             }
         }
