@@ -22,7 +22,7 @@ enum class Status_sprite_index {
     LEFT2  = 41,
 };
 
-#if 1
+#if defined(__LINUX__)
 namespace sf {
 /* --- overloading operator << for size_t */
 inline Packet& operator<<(Packet& packet, size_t value) {
@@ -293,6 +293,7 @@ public:
 
     Map global_map;  
     std::atomic<bool> game_over{false};
+    std::atomic<bool> terminate{false};
 
     void create_from_settings(std::string proj_settings_filename){
         factory.read_settings(proj_settings_filename);
@@ -378,9 +379,9 @@ public:
 
     void add_player(sf::Vector2f offset) {
         player_objects.emplace_back();
-        #ifdef DEBUG
+        // #ifdef DEBUG
         std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
-        #endif
+        // #endif
         player_objects.back().first = next_player_unique_id++;
         float start_move_coeff = static_cast<float>(next_player_unique_id);
         player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
@@ -607,7 +608,6 @@ public:
             window.display();
         }
         window.close();
-        abort();
         return;
     }
 
