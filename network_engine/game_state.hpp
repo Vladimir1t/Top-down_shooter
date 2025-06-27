@@ -376,7 +376,7 @@ public:
         }
     };
 
-    void add_player() {
+    void add_player(sf::Vector2f offset) {
         player_objects.emplace_back();
         #ifdef DEBUG
         std::cout << "next_player_unique_id = " << next_player_unique_id << '\n';
@@ -384,7 +384,8 @@ public:
         player_objects.back().first = next_player_unique_id++;
         float start_move_coeff = static_cast<float>(next_player_unique_id);
         player_objects.back().second.set_coeff_velocity_and_rot({1.0, 1.0}, 0.01);
-        player_objects.back().second.move({start_move_coeff, start_move_coeff});
+        player_objects.back().second.move({offset.x + start_move_coeff, 
+                                           offset.y + start_move_coeff});
     }
 
     void add_mob(sf::Vector2f offset) {

@@ -64,7 +64,7 @@ int Run_mobs(game::game_state_server& global_state) {
 
     for (float i = 0; i < game::NUM_MOBS; ++i) {
         std::lock_guard<std::mutex> lock(state_mutex);
-        global_state.add_mob({10 + i, 10 + i}); 
+        global_state.add_mob({10 + i * 10, 10 + i * 10}); 
     }
 
     sf::Clock clock_shoot;

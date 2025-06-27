@@ -95,7 +95,7 @@ public:
                     for (auto& w: global_state.walls){
                         _outcoming_messages.back() << w.id_ << w.x << w.y << w.width << w.height;
                     }
-                    global_state.add_player();
+                    global_state.add_player({300, 300});
                 }
             }
             for (int i = 0; auto&& client: _clients) {

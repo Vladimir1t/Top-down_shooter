@@ -347,8 +347,8 @@ static void get_initial_data(game::game_state_client& global_state, sf::TcpSocke
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2 || std::stoi(argv[1]) < game::NUM_MOBS) {
-        std::cerr << "You should write the correct index of client [from " << game::NUM_MOBS << " to N]\n";
+    if (argc != 2 || std::stoi(argv[1]) < 0) {
+        std::cerr << "You should write the correct index of client [from 0 to N]\n";
         return -1;
     }
     
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     std::thread network_thread(network_handler, std::ref(ctrl_handler), std::ref(global_state),
         std::ref(server), std::ref(player_count));
     /* --- Main thread of rendering module --- */
-    index_cli = std::stoi(argv[1]);
+    index_cli = std::stoi(argv[1]) + game::NUM_MOBS;
 
     render_window(ctrl_handler, global_state);
 
